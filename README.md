@@ -1,2 +1,2 @@
 # tgi-interface-bootstrap
-Sean Smith
+Interface using bootstrap

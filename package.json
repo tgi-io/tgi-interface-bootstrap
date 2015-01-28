@@ -1,0 +1,41 @@
+{
+  "name": "tgi-interface-bootstrap",
+  "version": "0.0.1",
+  "description": "BootstrapInterface",
+  "contributors": [
+    {
+      "name": "Sean Smith",
+      "email": "sean@tgicloud.com"
+    }
+  ],
+  "dependencies": {
+    "bootstrap": "*",
+    "tgi-core": "*",
+    "tgi-spec": "*"
+  },
+  "scripts": {
+    "test": "node spec/node-runner.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tgi-io/tgi-interface-bootstrap.git"
+  },
+  "keywords": [
+    "javascript",
+    "application",
+    "app",
+    "api",
+    "html5",
+    "framework"
+  ],
+  "author": "Sean Smith <sean@tgicloud.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "gulp": "^3.8.7",
+    "gulp-concat": "^2.4.0",
+    "gulp-jshint": "^1.8.4",
+    "gulp-rename": "^1.2.0",
+    "gulp-uglify": "^1.0.1",
+    "jshint-stylish": "^1.0.0"
+  }
+}

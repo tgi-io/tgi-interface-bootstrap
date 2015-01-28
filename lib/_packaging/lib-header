@@ -1,0 +1,6 @@
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-interface-bootstrap/lib/_packaging/lib-header
+ **/
+(function () {
+"use strict";
+var root = this;

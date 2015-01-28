@@ -1,0 +1,5 @@
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-interface-bootstrap/lib/_packaging/spec-header
+ **/
+  var BootstrapInterface = TGI.INTERFACE.BOOTSTRAP().BootstrapInterface;
+  spec.mute(true);
