@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.css">
+  <title>Bootstrap Interface User Query Prototype</title>
+</head>
+<body>
+<div id="infoAlert" class="alert alert-warning alert-dismissible" role="alert">
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+  This is bootstraps alert class it actually sucks and need to find something better. <b>NOTE IF YOU CLOSE THIS THEN INTO IS BROKEN</b>
+</div>
+<br>&nbsp;
+<button id="infoBtn" type="button" class="btn btn-info btn-lg">
+  info
+</button>
+<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal1">
+  ok
+</button>
+<div class="modal fade" id="myModal1" tabindex="-1" role="dialog" aria-labelledby="myModal1Label" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" style="text-align: center">
+        <h4 class="modal-title" id="myModal1Label">Modal title</h4>
+      </div>
+      <div class="modal-body" style="text-align: center">
+        This is the dialogue for the app.ok() user query. Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+        <br><br>That's all I got.
+      </div>
+      <div class="modal-footer" style="text-align: center">
+        <button type="button" class="btn btn-primary btn-default" data-dismiss="modal">&nbsp;&nbsp;OK&nbsp;&nbsp;</button>
+      </div>
+    </div>
+  </div>
+</div>
+<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal2">
+  yesno
+</button>
+<div class="modal fade" id="myModal2" tabindex="-1" role="dialog" aria-labelledby="myModal2Label" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" style="text-align: center">
+        <h4 class="modal-title" id="myModal2Label">Modal title</h4>
+      </div>
+      <div class="modal-body" style="text-align: center">
+        This is the dialogue for the app.yesno() user query.<br><br>
+        Are you sure you know what you are doing?
+      </div>
+      <div class="modal-footer" style="text-align: center">
+        <button type="button" class="btn btn-success" data-dismiss="modal">&nbsp;Yes&nbsp;</button>
+        &nbsp;
+        <button type="button" class="btn btn-danger" data-dismiss="modal">&nbsp;No&nbsp;&nbsp;</button>
+      </div>
+    </div>
+  </div>
+</div>
+<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal3">
+  ask
+</button>
+<div class="modal fade" id="myModal3" tabindex="-1" role="dialog" aria-labelledby="myModal3Label" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" style="text-align: center">
+        <h4 class="modal-title" id="myModal3Label">Modal title</h4>
+      </div>
+      <div class="modal-body" style="text-align: center">
+        This is the dialogue for the app.ask() user query.<br><br>
+        Enter your email to get more info:
+        <br>
+        <br>
+        <input style="margin:0 auto; width:80%;" type="email" class="form-control" name="email" id="send_email" placeholder="johndoe@yahoo.com" title="Input Email Address">
+      </div>
+      <div class="modal-footer" style="text-align: center">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">&nbsp;&nbsp;OK&nbsp;&nbsp;</button>
+        &nbsp;
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal4">
+  choose
+</button>
+<div class="modal fade" id="myModal4" tabindex="-1" role="dialog" aria-labelledby="myModal4Label" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" style="text-align: center">
+        <h4 class="modal-title" id="myModal4Label">Modal title</h4>
+      </div>
+      <div class="modal-body" style="text-align: center">
+        This is the dialogue for the app.choose() user query.<br><br>
+        Pick one:
+        <br><br>
+        <button type="button" class="btn btn-default btn-block" data-dismiss="modal"><b class="text-primary">eat</b></button>
+        <button type="button" class="btn btn-default btn-block" data-dismiss="modal"><b class="text-primary">more</b></button>
+        <button type="button" class="btn btn-default btn-block" data-dismiss="modal"><b class="text-primary">chiken</b></button>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default btn-block" data-dismiss="modal"><b class="text-danger">Cancel</b></button>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript" src="../node_modules/jquery/dist/jquery.js"></script>
+<script type="text/javascript" src="../node_modules/bootstrap/dist/js/bootstrap.js"></script>
+<script>
+  $("#infoAlert").hide();
+  $("#infoBtn").click(function () {
+    $("#infoAlert").show();
+  });
+</script>
+</body>
+</html>

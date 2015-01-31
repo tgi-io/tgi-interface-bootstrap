@@ -1,13 +1,12 @@
 /**---------------------------------------------------------------------------------------------------------------------
  * tgi-interface-bootstrap/test/html-play.js
  **/
-
 var tgi = TGI.CORE();
-var f7 = new (TGI.INTERFACE.BOOTSTRAP().BootstrapInterface)({vendor: Bootstrap});
-var app = new tgi.Application({interface: f7});
+var bs = new (TGI.INTERFACE.BOOTSTRAP().BootstrapInterface)({vendor: Date}); // no vendor function
+var app = new tgi.Application({interface: bs});
 var nav = new tgi.Presentation();
 
-app.setInterface(f7);
+app.setInterface(bs);
 app.set('brand', 'TGI Play');
 app.setPresentation(nav);
 app.start(function (request) {
@@ -68,6 +67,7 @@ cmd.onEvent('*', function (event) {
   app.info('cmd.onEvent: ' + event);
 });
 cmd.execute();
+
 
 
 //
