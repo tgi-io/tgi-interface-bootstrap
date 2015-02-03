@@ -58,7 +58,7 @@ var userQuerieCommand = new tgi.Command({
 });
 userQuerieCommand.onEvent('*', function (event) {
   if (event == 'Aborted') {
-    app.info('ok fine ne that way');
+    app.info('ok fine be that way');
   }
 });
 // Create a function command

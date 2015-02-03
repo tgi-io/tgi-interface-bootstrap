@@ -2503,7 +2503,6 @@ BootstrapInterface.addEle = function (parent, tagName, className, attributes) {
  * tgi-interface-bootstrap/lib/tgi-interface-bootstrap-navigation.source.js
  */
 BootstrapInterface.prototype.htmlNavigation = function () {
-  console.log('poop');
   var addEle = BootstrapInterface.addEle;
   var navBar = addEle(document.body, 'nav', 'navbar navbar-default navbar-fixed-top');
   var navBarContainer = addEle(navBar, 'div', 'container');
@@ -2522,8 +2521,8 @@ BootstrapInterface.prototype.htmlNavigation = function () {
 };
 BootstrapInterface.prototype.refreshNavigation = function () {
   var addEle = BootstrapInterface.addEle;
-  var navBarLeft = addEle(this.doc.navBarBody, 'ul', 'nav navbar-nav');
-  var navBarRight = addEle(this.doc.navBarBody, 'ul', 'nav navbar-nav navbar-right');
+  this.doc.navBarLeft = addEle(this.doc.navBarBody, 'ul', 'nav navbar-nav');
+  this.doc.navBarRight = addEle(this.doc.navBarBody, 'ul', 'nav navbar-nav navbar-right');
   /**
    * Brand
    */
@@ -2533,30 +2532,65 @@ BootstrapInterface.prototype.refreshNavigation = function () {
    */
   var menuContents = this.presentation.get('contents');
   var separatorSeen = false;
-  for (var menuItem in menuContents) {
-    if (menuContents[menuItem] == '-')
-      separatorSeen = true;
-    else
-      this.addNavigationItem((separatorSeen ? navBarRight : navBarLeft), menuContents[menuItem]);
+  for (var menuItem in menuContents) if (menuContents.hasOwnProperty(menuItem)) {
+    if (menuContents[menuItem].type == 'Menu') {
+      var parentMenu = this.addNavBarListMenu(this.doc.navBarLeft, menuContents[menuItem].name);
+      var subMenu = menuContents[menuItem].contents;
+      for (var subPres in subMenu)
+        if (subMenu.hasOwnProperty(subPres))
+          this.addNavBarListItem(parentMenu, subMenu[subPres]);
+    } else {
+      if (menuContents[menuItem] == '-')
+        separatorSeen = true;
+      else
+        this.addNavigationItem((separatorSeen ? this.doc.navBarRight : this.doc.navBarLeft), menuContents[menuItem]);
+    }
   }
-  //addEle(navBarLeft, 'li').innerHTML = '<a href="#">Eat</a>';
-  //addEle(navBarLeft, 'li').innerHTML = '<a href="#">More</a>';
-  //addEle(navBarLeft, 'li').innerHTML = '<a href="#">Chiken</a>';
-  //addEle(navBarRight, 'li').innerHTML = '<a href="#">Face</a>';
 };
 BootstrapInterface.prototype.addNavigationItem = function (parent, action) {
   var bootstrapInterface = this;
   var listItem = BootstrapInterface.addEle(parent, 'li');
   listItem.innerHTML = '<a>' + action.name + '</a>';
   $(listItem).click(function (e) {
-    // console.log(JSON.stringify(action));
-    // action.status = undefined;
-    console.log('SHITTY BALLS');
     bootstrapInterface.dispatch(new Request({type: 'Command', command: action}));
     e.preventDefault();
   })
 };
+BootstrapInterface.prototype.addNavBarListItem = function (parent, action, icon) {
+  var self = this;
+  var html;
+  var listItem = document.createElement('li');
+  icon = icon || '';
+  if (action instanceof Command) {
+    html = '<a>' + icon + action.name + '</a>';
+    $(listItem).click(function (e) {
+      self.dispatch(new Request({type: 'Command', command: action}));
+      e.preventDefault();
+    });
+  } else {
+    if (action == '-') {
+      listItem.className = 'divider';
+    } else {
+      listItem.className = 'dropdown-header';
+      html = action;
+    }
+  }
+  listItem.innerHTML = html;
+  parent.appendChild(listItem);
+};
+BootstrapInterface.prototype.addNavBarListMenu = function (parent, name) {
 
+  var dropDown = document.createElement('li');
+  dropDown.className = "dropdown";
+  dropDown.innerHTML = '<a href="#" class="dropdown-toggle navbar-menu" data-toggle="dropdown">' + name + '<b class="caret"></b></a>'
+  parent.appendChild(dropDown);
+
+  var dropDownMenu = document.createElement('ul');
+  dropDownMenu.className = "dropdown-menu";
+  dropDown.appendChild(dropDownMenu);
+
+  return dropDownMenu;
+};
 /**---------------------------------------------------------------------------------------------------------------------
  * tgi-interface-bootstrap/lib/tgi-interface-bootstrap-queries.source.js
  */
