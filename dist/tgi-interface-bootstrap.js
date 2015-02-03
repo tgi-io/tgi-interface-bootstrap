@@ -2517,6 +2517,7 @@ BootstrapInterface.prototype.htmlNavigation = function () {
   addEle(navBarHeaderButton, 'span', 'icon-bar');
   addEle(navBarHeaderButton, 'span', 'icon-bar');
   this.doc.navBarBody = addEle(navBarContainer, 'div', 'navbar-collapse collapse', {id: 'navbar'});
+  this.doc.navBarAlert = addEle(navBarContainer, 'div', 'container', {style: "margin:0"})
   this.refreshNavigation();
 };
 BootstrapInterface.prototype.refreshNavigation = function () {
@@ -2783,10 +2784,19 @@ BootstrapInterface.prototype.htmlDialog = function () {
 };
 
 BootstrapInterface.prototype.info = function (text) {
+  var bootstrapInterface = this;
   if (!text || typeof text !== 'string') throw new Error('text required');
-  var info = BootstrapInterface.addEle(document.body, 'h4');
-  info.innerHTML = '&nbsp;' + text + '<br>';
-  console.log('info: ' + text);
+  var infoClass = ' class="text-center text-info" ';
+  var infoStyle = ' style="margin-top: 0; margin-bottom: 4px;" ';
+  this.doc.navBarAlert.innerHTML = '<h5 ' + infoClass + infoStyle + '>' + text + '</h5>';
+  $(this.doc.navBarAlert).click(function (e) {
+    bootstrapInterface.doc.navBarAlert.innerHTML = '';
+    e.preventDefault();
+  });
+  setTimeout(function () {
+    bootstrapInterface.doc.navBarAlert.innerHTML = '';
+  },3000);
+
 };
 BootstrapInterface.prototype.ok = function (prompt, callBack) {
   if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
