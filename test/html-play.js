@@ -5,27 +5,24 @@ var tgi = TGI.CORE();
 var bs = new (TGI.INTERFACE.BOOTSTRAP().BootstrapInterface)({vendor: Date}); // no vendor function
 var app = new tgi.Application({interface: bs});
 var nav = new tgi.Presentation();
-
 app.setInterface(bs);
 app.set('brand', 'TGI Play');
 app.setPresentation(nav);
-app.start(function (request) {
-  console.log('app got ' + JSON.stringify(request));
-});
 
+/**
+ * Commands
+ */
 var name,
   isDude,
   color;
-
-
-var cmd = new tgi.Command({
-  name: 'cmdProcedure', type: 'Procedure', contents: new tgi.Procedure({
+var userQuerieCommand = new tgi.Command({
+  name: 'User Queries', type: 'Procedure', contents: new tgi.Procedure({
     tasks: [
       function () {
         var task = this;
         app.ask('What is first your name?', new tgi.Attribute({name: 'name'}), function (reply) {
           if (!reply)
-            cmd.abort();
+            userQuerieCommand.abort();
           else {
             name = reply;
             task.complete();
@@ -43,7 +40,7 @@ var cmd = new tgi.Command({
         var task = this;
         app.choose('OK ' + (isDude ? 'mr. ' : 'ms. ') + name + ', please pick a color.\nany color..\n\nplease pick one now', ['red', 'green', 'blue', 'black', 'white'], function (choice) {
           if (!choice)
-            cmd.abort();
+            userQuerieCommand.abort();
           else {
             color = choice;
             task.complete();
@@ -59,47 +56,80 @@ var cmd = new tgi.Command({
     ]
   })
 });
-cmd.onEvent('*', function (event) {
+userQuerieCommand.onEvent('*', function (event) {
   if (event == 'Aborted') {
-    app.ok('\nok fine\n\nbe that way', function () {
-    });
+    app.info('ok fine ne that way');
   }
-  app.info('cmd.onEvent: ' + event);
 });
-cmd.execute();
+// Create a function command
+var funcCommand = new tgi.Command({name: 'Function', type: 'Function', contents: function () {
+  window.alert("Hello! I am an alert box!!");
+}});
 
+// Create a procedure command
+var procCommand = new tgi.Command({name: 'Procedure', type: 'Procedure', contents: new tgi.Procedure()});
 
+// Stub commands
+var stubMoe = new tgi.Command({name: 'Moe', description: 'Moses Horwitz', theme: 'primary', icon: 'fa-coffee'});
+var stubLarry = new tgi.Command({name: 'Larry', description: 'Louis Fienberg', theme: 'info', icon: 'fa-beer'});
+var stubCurly = new tgi.Command({name: 'Curly', description: 'Jerome Lester Horwitz', theme: 'warning', icon: 'fa-glass'});
 
-//
-//
-//var okFine = function(){
-//  app.ok('OK fine.\n\nBe that way.');
-//};
-//
-//var getName = function () {
-//
-//};
-//
-//var getSex = function () {
-//
-//};
-//
-//var getRace = function () {
-//
-//}
-//
-//app.ask('What is your name?', new tgi.Attribute({name: 'name'}), function (name) {
-//  if (name)
-//    app.info('What\'s up ' + name + '?');
-//  else {
-//    name = 'Dude';
-//    app.info('Let\'s call you ' + name + '.');
-//  }
-//  app.choose(name + ', please pick a color.\nany color..\n\nplease pick one now',['red','green','blue','black','white'], function (color) {
-//    app.info('You picked  ' + color);
-//    app.yesno(name + ' are you a dude?', function (dude) {
-//      app.ok(name + ' is a ' +  color +  (dude ? ' dude.' : ' chick.') + '\n\n*** THE END ***', function () {
-//      });
-//    });
-//  });
-//});
+// Create sample presentation
+var pres = new tgi.Presentation();
+pres.set('contents', [
+  '####INSTRUCTIONS\n\n' +
+  'Enter some stuff then push some buttons.',
+  '-',
+  new tgi.Attribute({name: 'firstName', label: 'First Name', type: 'String(20)', value: 'John'}),
+  new tgi.Attribute({name: 'lastName', label: 'Last Name', type: 'String(25)', value: 'Doe'}),
+  new tgi.Attribute({name: 'address', label: 'Address', type: 'String(50)'}),
+  new tgi.Attribute({name: 'city', label: 'City', type: 'String(35)'}),
+  new tgi.Attribute({name: 'state', label: 'State', type: 'String(2)'}),
+  new tgi.Attribute({name: 'zip', label: 'Zip Code', type: 'String(10)', placeHolder: '#####-####'}),
+  new tgi.Attribute({name: 'birthDate', label: 'Birth Date', type: 'Date', value: new Date()}),
+  new tgi.Attribute({name: 'drink', type: 'String(25)', quickPick:['Water','Coke','Coffee']}),
+  new tgi.Attribute({name: 'sex', type: 'Boolean', value: true}),
+  new tgi.Attribute({name: 'drugs', type: 'Boolean', value: false}),
+  new tgi.Attribute({name: 'IQ', type: 'Number', value: 100}),
+  '-',
+  funcCommand,
+  procCommand,
+  stubMoe,
+  stubLarry,
+  stubCurly
+
+]);
+var presCommand = new tgi.Command({name: 'Presentation', type: 'Presentation', contents: pres});
+var commands =   new tgi.Command({name: 'Commands', type: 'Menu', contents: [
+  'Command Types',
+  '-',
+  new tgi.Command({name: 'Stub', type: 'Stub'}),
+  presCommand,
+  funcCommand,
+  procCommand
+]})
+
+/**
+ * Navigation
+ */
+nav.set('contents', [
+  new tgi.Command({name: 'Stooges', type: 'Menu', contents: [
+    'The Three Stooges',
+    '-',
+    stubMoe,
+    stubLarry,
+    stubCurly
+  ]}),
+  commands,
+  userQuerieCommand,
+  '-',
+  new tgi.Command({name: 'Account'})
+]);
+
+/**
+ * Start the app
+ */
+app.start(function (request) {
+  app.info('app got ' + JSON.stringify(request));
+});
+app.info("What's up?");

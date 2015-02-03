@@ -10,7 +10,7 @@ var root = this;
 var TGI = {
   CORE: function () {
     return {
-      version: '0.0.34',
+      version: '0.1.0',
       Application: Application,
       Attribute: Attribute,
       Command: Command,
@@ -476,8 +476,8 @@ Command.prototype._emitEvent = function (event) {
       }
     }
   }
-  if (event == 'Completed') // if command complete release listeners
-    this._eventListeners = [];
+  //if (event == 'Completed') // if command complete release listeners
+  //  this._eventListeners = [];
 };
 Command.prototype.execute = function () {
   if (!this.type) throw new Error('command not implemented');
@@ -501,11 +501,10 @@ Command.prototype.execute = function () {
   try {
     switch (this.type) {
       case 'Function':
-        this.status = 0;
         setTimeout(callFunc, 0);
         break;
       case 'Procedure':
-        setTimeout(procedureExecute, 0);
+        setTimeout(procedureExecuteInit, 0);
         break;
     }
   } catch (e) {
@@ -516,6 +515,7 @@ Command.prototype.execute = function () {
   }
   this._emitEvent('AfterExecute');
   function callFunc() {
+    self.status = 0;
     try {
       self.contents.apply(self, args); // give function this context to command object (self)
     } catch (e) {
@@ -525,8 +525,7 @@ Command.prototype.execute = function () {
       self.status = -1;
     }
   }
-
-  function procedureExecute() {
+  function procedureExecuteInit() {
     self.status = 0;
     var tasks = self.contents.tasks || [];
     for (var t = 0; t < tasks.length; t++) {
@@ -541,6 +540,13 @@ Command.prototype.execute = function () {
         tasks[t].command._parentProcedure = self;
         tasks[t].command.onEvent('*', ProcedureEvents);
       }
+      tasks[t].command.status = undefined;
+    }
+    procedureExecute();
+  }
+  function procedureExecute() {
+    var tasks = self.contents.tasks || [];
+    for (var t = 0; t < tasks.length; t++) {
       // Execute if it is time
       var canExecute = true;
       if (typeof (tasks[t].command.status) == 'undefined') {
@@ -607,10 +613,10 @@ Command.prototype.complete = function () {
   this.status = 1;
   this._emitEvent('Completed');
 };
-Command.prototype.restart = function () {
-  // TODO add to tests
-  this._emitEvent('Completed');
-};
+//Command.prototype.restart = function () {
+//  this.status = undefined;
+//  this._emitEvent('Completed');
+//};
 /**
  * Simple functions
  */
@@ -1563,7 +1569,6 @@ REPLInterface.prototype.info = function (text) {
     this.captureOutputCallback(text);
   }
 };
-
 REPLInterface.prototype.ok = function (prompt, callBack) {
   if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
   if (typeof callBack != 'function') throw new Error('callBack required');
@@ -1683,8 +1688,7 @@ REPLInterface.prototype.evaluateInput = function (line) {
    * This should never get this far ...
    */
   if (this.captureOutputCallback) this.captureOutputCallback('input ignored: ' + line);
-}
-;
+};
 REPLInterface.prototype.captureOutput = function (callback) {
   this.captureOutputCallback = callback;
 };
@@ -2473,149 +2477,18 @@ BootstrapInterface.prototype.start = function (application, presentation, callBa
   } catch (e) {
     throw new Error('Error initializing Bootstrap: ' + e);
   }
-  this.htmlFramework();
-};
-BootstrapInterface.prototype.info = function (text) {
-  if (!text || typeof text !== 'string') throw new Error('text required');
-  var info = BootstrapInterface.addEle(document.body, 'h4');
-  info.innerHTML = '&nbsp;' + text + '<br>';
-
-};
-BootstrapInterface.prototype.ok = function (prompt, callBack) {
-  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
-  if (typeof callBack != 'function') throw new Error('callBack required');
-  if (this.okPending) {
-    delete this.okPending;
-    callBack();
-  } else {
-    this.doc.okDialogTitle.innerHTML = this.application.get('brand');
-    this.doc.okDialogBody.innerHTML = prompt;
-    $(this.doc.okDialog).modal();
-    this.okCallBack = callBack;
-  }
-};
-BootstrapInterface.prototype.yesno = function (prompt, callBack) {
-  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
-  if (typeof callBack != 'function') throw new Error('callBack required');
-  if (this.yesnoPending) {
-    delete this.yesnoPending;
-    callBack(this.yesnoResponse);
-  } else {
-    this.doc.yesnoDialogTitle.innerHTML = this.application.get('brand');
-    this.doc.yesnoDialogBody.innerHTML = prompt;
-    $(this.doc.yesnoDialog).modal();
-    this.yesnoCallBack = callBack;
-  }
-};
-BootstrapInterface.prototype.ask = function (prompt, attribute, callBack) {
-  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
-  if (false === (attribute instanceof Attribute)) throw new Error('instance of Attribute a required parameter');
-  if (typeof callBack != 'function') throw new Error('callBack required');
-  if (this.askPending) {
-    delete this.askPending;
-    callBack(this.askResponse);
-  } else {
-    this.doc.askDialogTitle.innerHTML = this.application.get('brand');
-    this.doc.askDialogPrompt.innerHTML = prompt + '<br><br>';
-    $(this.doc.askDialog).modal();
-    this.askCallBack = callBack;
-  }
-};
-BootstrapInterface.prototype.choose = function (prompt, choices, callBack) {
-  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
-  if (false === (choices instanceof Array)) throw new Error('choices array required');
-  if (!choices.length) throw new Error('choices array empty');
-  if (typeof callBack != 'function') throw new Error('callBack required');
-  if (this.choosePending) {
-    delete this.choosePending;
-    callBack(Interface.firstMatch(this.chooseResponse, choices));
-  } else {
-    if (choices.length > this.doc.chooseDialogButtons.length) throw new Error('max choices reached in choose');
-    this.doc.chooseDialogTitle.innerHTML = this.application.get('brand');
-    this.doc.chooseDialogPrompt.innerHTML = prompt.replace(/\n/g, '<br>');
-    $(this.doc.chooseDialog).modal();
-    this.chooseCallBack = callBack;
-    this.doc.chooseDialogChoices = choices;
-    for (var i = 0; i < this.doc.chooseDialogButtons.length; i++) {
-      if (i < choices.length) {
-        this.doc.chooseDialogButtons[i].innerHTML = '<b class="text-primary">' + choices[i] + '</b>';
-        $(this.doc.chooseDialogButtons[i]).show();
-      } else {
-        $(this.doc.chooseDialogButtons[i]).hide();
-      }
-    }
-    return;
-
-    var groups = [];
-    groups.push([{text: prompt.replace(/\n/g, '<br>'), label: true}]);
-    if (choices.length > 0) groups.push([{text: choices[0], onClick: cb0}]);
-    if (choices.length > 1) groups.push([{text: choices[1], onClick: cb1}]);
-    if (choices.length > 2) groups.push([{text: choices[2], onClick: cb2}]);
-    if (choices.length > 3) groups.push([{text: choices[3], onClick: cb3}]);
-    if (choices.length > 4) groups.push([{text: choices[4], onClick: cb4}]);
-    if (choices.length > 5) groups.push([{text: choices[5], onClick: cb5}]);
-    if (choices.length > 6) groups.push([{text: choices[6], onClick: cb6}]);
-    if (choices.length > 7) groups.push([{text: choices[7], onClick: cb7}]);
-    if (choices.length > 8) groups.push([{text: choices[8], onClick: cb8}]);
-    if (choices.length > 9) groups.push([{text: choices[9], onClick: cb9}]);
-    if (choices.length > 10) throw new Error('max choices reached in choose');
-    groups.push([{text: 'Cancel', color: 'red', onClick: cbCancel}]);
-    Framework7Interface._f7.actions(groups);
-    //this.chooseCallBack = callBack;
-    //this.chooseChoices = choices;
-  }
   /**
-   * Since framework does not return any info in callback
+   * Add needed html to DOM
    */
-  function cbCancel() {
-    callBack();
-  }
-
-  function cb0() {
-    callBack(choices[0]);
-  }
-
-  function cb1() {
-    callBack(choices[1]);
-  }
-
-  function cb2() {
-    callBack(choices[2]);
-  }
-
-  function cb3() {
-    callBack(choices[3]);
-  }
-
-  function cb4() {
-    callBack(choices[4]);
-  }
-
-  function cb5() {
-    callBack(choices[5]);
-  }
-
-  function cb6() {
-    callBack(choices[6]);
-  }
-
-  function cb7() {
-    callBack(choices[7]);
-  }
-
-  function cb8() {
-    callBack(choices[8]);
-  }
-
-  function cb9() {
-    callBack(choices[9]);
-  }
-
+  this.doc = {}; // Keep DOM element IDs here
+  this.htmlDialog();
+  if (this.presentation.get('contents').length)
+    this.htmlNavigation();
 };
 /**
- * Vendor implementations
+ * DOM helper
  */
-BootstrapInterface.addEle = function (parent, tagName, className, attributes) { // DOM helper
+BootstrapInterface.addEle = function (parent, tagName, className, attributes) {
   var ele = document.createElement(tagName);
   if (className && className.length)
     ele.className = className;
@@ -2625,10 +2498,68 @@ BootstrapInterface.addEle = function (parent, tagName, className, attributes) { 
   parent.appendChild(ele);
   return ele;
 };
-BootstrapInterface.prototype.htmlFramework = function () {
-  this.doc = {}; // Keep DOM element IDs here
-  this.htmlDialog();
+
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-interface-bootstrap/lib/tgi-interface-bootstrap-navigation.source.js
+ */
+BootstrapInterface.prototype.htmlNavigation = function () {
+  console.log('poop');
+  var addEle = BootstrapInterface.addEle;
+  var navBar = addEle(document.body, 'nav', 'navbar navbar-default navbar-fixed-top');
+  var navBarContainer = addEle(navBar, 'div', 'container');
+  this.doc.navBarHeader = addEle(navBarContainer, 'div', 'navbar-header');
+  var navBarHeaderButton = addEle(this.doc.navBarHeader, 'button', 'navbar-toggle collapsed', {
+    'data-toggle': 'collapse',
+    'data-target': '#navbar',
+    'aria-expanded': 'false',
+    'aria-controls': 'navbar'
+  });
+  addEle(navBarHeaderButton, 'span', 'icon-bar');
+  addEle(navBarHeaderButton, 'span', 'icon-bar');
+  addEle(navBarHeaderButton, 'span', 'icon-bar');
+  this.doc.navBarBody = addEle(navBarContainer, 'div', 'navbar-collapse collapse', {id: 'navbar'});
+  this.refreshNavigation();
 };
+BootstrapInterface.prototype.refreshNavigation = function () {
+  var addEle = BootstrapInterface.addEle;
+  var navBarLeft = addEle(this.doc.navBarBody, 'ul', 'nav navbar-nav');
+  var navBarRight = addEle(this.doc.navBarBody, 'ul', 'nav navbar-nav navbar-right');
+  /**
+   * Brand
+   */
+  addEle(this.doc.navBarHeader, 'a', 'navbar-brand').innerHTML = '<a href="#">' + this.application.get('brand') + '</a>';
+  /**
+   * Menu
+   */
+  var menuContents = this.presentation.get('contents');
+  var separatorSeen = false;
+  for (var menuItem in menuContents) {
+    if (menuContents[menuItem] == '-')
+      separatorSeen = true;
+    else
+      this.addNavigationItem((separatorSeen ? navBarRight : navBarLeft), menuContents[menuItem]);
+  }
+  //addEle(navBarLeft, 'li').innerHTML = '<a href="#">Eat</a>';
+  //addEle(navBarLeft, 'li').innerHTML = '<a href="#">More</a>';
+  //addEle(navBarLeft, 'li').innerHTML = '<a href="#">Chiken</a>';
+  //addEle(navBarRight, 'li').innerHTML = '<a href="#">Face</a>';
+};
+BootstrapInterface.prototype.addNavigationItem = function (parent, action) {
+  var bootstrapInterface = this;
+  var listItem = BootstrapInterface.addEle(parent, 'li');
+  listItem.innerHTML = '<a>' + action.name + '</a>';
+  $(listItem).click(function (e) {
+    // console.log(JSON.stringify(action));
+    // action.status = undefined;
+    console.log('SHITTY BALLS');
+    bootstrapInterface.dispatch(new Request({type: 'Command', command: action}));
+    e.preventDefault();
+  })
+};
+
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-interface-bootstrap/lib/tgi-interface-bootstrap-queries.source.js
+ */
 BootstrapInterface.prototype.htmlDialog = function () {
   var bootstrapInterface = this;
   var addEle = BootstrapInterface.addEle;
@@ -2753,63 +2684,54 @@ BootstrapInterface.prototype.htmlDialog = function () {
   modalBody = addEle(modalContent, 'div', 'modal-body', {style: 'text-align: center'});
   this.doc.chooseDialogPrompt = addEle(modalBody, 'div', 'modal-body', {style: 'text-align: center'});
   this.doc.chooseDialogButtons = [];
-
   choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
   $(choice).on('click', function () {
     bootstrapInterface.doc.chooseDialogChoice = 0;
     $(bootstrapInterface.doc.chooseDialog).modal('hide');
   });
   this.doc.chooseDialogButtons.push(choice);
-
   choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
   $(choice).on('click', function () {
     bootstrapInterface.doc.chooseDialogChoice = 1;
     $(bootstrapInterface.doc.chooseDialog).modal('hide');
   });
   this.doc.chooseDialogButtons.push(choice);
-
   choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
   $(choice).on('click', function () {
     bootstrapInterface.doc.chooseDialogChoice = 2;
     $(bootstrapInterface.doc.chooseDialog).modal('hide');
   });
   this.doc.chooseDialogButtons.push(choice);
-
   choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
   $(choice).on('click', function () {
     bootstrapInterface.doc.chooseDialogChoice = 3;
     $(bootstrapInterface.doc.chooseDialog).modal('hide');
   });
   this.doc.chooseDialogButtons.push(choice);
-
   choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
   $(choice).on('click', function () {
     bootstrapInterface.doc.chooseDialogChoice = 4;
     $(bootstrapInterface.doc.chooseDialog).modal('hide');
   });
   this.doc.chooseDialogButtons.push(choice);
-
   choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
   $(choice).on('click', function () {
     bootstrapInterface.doc.chooseDialogChoice = 5;
     $(bootstrapInterface.doc.chooseDialog).modal('hide');
   });
   this.doc.chooseDialogButtons.push(choice);
-
   choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
   $(choice).on('click', function () {
     bootstrapInterface.doc.chooseDialogChoice = 6;
     $(bootstrapInterface.doc.chooseDialog).modal('hide');
   });
   this.doc.chooseDialogButtons.push(choice);
-
   choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
   $(choice).on('click', function () {
     bootstrapInterface.doc.chooseDialogChoice = 7;
     $(bootstrapInterface.doc.chooseDialog).modal('hide');
   });
   this.doc.chooseDialogButtons.push(choice);
-
   modalFooter = addEle(modalContent, 'div', 'modal-footer', {style: 'text-align: center'});
   modalCancel = addEle(modalFooter, 'button', 'btn btn-default btn-block');
   modalCancel.innerHTML = '<b class="text-danger">Cancel</b>';
@@ -2825,6 +2747,125 @@ BootstrapInterface.prototype.htmlDialog = function () {
     }
   });
 };
+
+BootstrapInterface.prototype.info = function (text) {
+  if (!text || typeof text !== 'string') throw new Error('text required');
+  var info = BootstrapInterface.addEle(document.body, 'h4');
+  info.innerHTML = '&nbsp;' + text + '<br>';
+  console.log('info: ' + text);
+};
+BootstrapInterface.prototype.ok = function (prompt, callBack) {
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  if (this.okPending) {
+    delete this.okPending;
+    callBack();
+  } else {
+    this.doc.okDialogTitle.innerHTML = this.application.get('brand');
+    this.doc.okDialogBody.innerHTML = prompt;
+    $(this.doc.okDialog).modal();
+    this.okCallBack = callBack;
+  }
+};
+BootstrapInterface.prototype.yesno = function (prompt, callBack) {
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  if (this.yesnoPending) {
+    delete this.yesnoPending;
+    callBack(this.yesnoResponse);
+  } else {
+    this.doc.yesnoDialogTitle.innerHTML = this.application.get('brand');
+    this.doc.yesnoDialogBody.innerHTML = prompt;
+    $(this.doc.yesnoDialog).modal();
+    this.yesnoCallBack = callBack;
+  }
+};
+BootstrapInterface.prototype.ask = function (prompt, attribute, callBack) {
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (false === (attribute instanceof Attribute)) throw new Error('instance of Attribute a required parameter');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  if (this.askPending) {
+    delete this.askPending;
+    callBack(this.askResponse);
+  } else {
+    this.doc.askDialogTitle.innerHTML = this.application.get('brand');
+    this.doc.askDialogPrompt.innerHTML = prompt + '<br><br>';
+    $(this.doc.askDialog).modal();
+    this.askCallBack = callBack;
+  }
+};
+BootstrapInterface.prototype.choose = function (prompt, choices, callBack) {
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (false === (choices instanceof Array)) throw new Error('choices array required');
+  if (!choices.length) throw new Error('choices array empty');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  if (this.choosePending) {
+    delete this.choosePending;
+    callBack(Interface.firstMatch(this.chooseResponse, choices));
+  } else {
+    if (choices.length > this.doc.chooseDialogButtons.length) throw new Error('max choices reached in choose');
+    this.doc.chooseDialogTitle.innerHTML = this.application.get('brand');
+    this.doc.chooseDialogPrompt.innerHTML = prompt.replace(/\n/g, '<br>');
+    $(this.doc.chooseDialog).modal();
+    this.chooseCallBack = callBack;
+    this.doc.chooseDialogChoices = choices;
+    for (var i = 0; i < this.doc.chooseDialogButtons.length; i++) {
+      if (i < choices.length) {
+        this.doc.chooseDialogButtons[i].innerHTML = '<b class="text-primary">' + choices[i] + '</b>';
+        $(this.doc.chooseDialogButtons[i]).show();
+      } else {
+        $(this.doc.chooseDialogButtons[i]).hide();
+      }
+    }
+  }
+  /**
+   * Since framework does not return any info in callback
+   */
+  function cbCancel() {
+    callBack();
+  }
+
+  function cb0() {
+    callBack(choices[0]);
+  }
+
+  function cb1() {
+    callBack(choices[1]);
+  }
+
+  function cb2() {
+    callBack(choices[2]);
+  }
+
+  function cb3() {
+    callBack(choices[3]);
+  }
+
+  function cb4() {
+    callBack(choices[4]);
+  }
+
+  function cb5() {
+    callBack(choices[5]);
+  }
+
+  function cb6() {
+    callBack(choices[6]);
+  }
+
+  function cb7() {
+    callBack(choices[7]);
+  }
+
+  function cb8() {
+    callBack(choices[8]);
+  }
+
+  function cb9() {
+    callBack(choices[9]);
+  }
+};
+
 /**---------------------------------------------------------------------------------------------------------------------
  * tgi-interface-bootstrap/lib/_packaging/lib-footer
  **/

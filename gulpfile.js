@@ -15,6 +15,8 @@ var libFiles = [
   'node_modules/tgi-core/dist/tgi.core.chunk.js',
   'lib/tgi-interface-bootstrap.lib.js',
   'lib/tgi-interface-bootstrap.source.js',
+  'lib/tgi-interface-bootstrap-navigation.source.js',
+  'lib/tgi-interface-bootstrap-queries.source.js',
   'lib/_packaging/lib-footer'
 ];
 
@@ -60,7 +62,7 @@ gulp.task('_lintLib', ['_buildLib'], function (callback) {
 // Lint Spec
 gulp.task('_lintSpec', ['_buildSpec'], function (callback) {
   return gulp.src('dist/tgi.core.spec.js')
-    .pipe(jshint({validthis: true, sub:true}))
+    .pipe(jshint({validthis: true, sub: true}))
     .pipe(jshint.reporter('jshint-stylish'))
     .pipe(jshint.reporter('fail'));
 });
@@ -76,6 +78,16 @@ gulp.task('test', ['lint'], function (callback) {
     console.log(stdout);
     callback(error);
   });
+});
+
+// Copy jQuery
+gulp.task('copyjQuery', function () {
+  return gulp.src(['node_modules/jquery/dist/**', 'node_modules/jquery/MIT-LICENSE.txt']).pipe(gulp.dest('dist/jquery'));
+});
+
+// Copy Bootstrap
+gulp.task('copyBootstrap', function () {
+  return gulp.src(['node_modules/bootstrap/dist/**', 'node_modules/bootstrap/LICENSE']).pipe(gulp.dest('dist/bootstrap'));
 });
 
 // Coverage Task
@@ -98,5 +110,5 @@ gulp.task('spec', ['lint'], function (callback) {
 });
 
 // Default & Travis CI Task
-gulp.task('default', ['test']);
+gulp.task('default', ['copyjQuery', 'copyBootstrap', 'test']);
 gulp.task('travis', ['test']);
