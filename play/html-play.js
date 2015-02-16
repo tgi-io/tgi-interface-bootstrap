@@ -2,7 +2,7 @@
  * tgi-interface-bootstrap/test/html-play.js
  **/
 var tgi = TGI.CORE();
-var bs = new (TGI.INTERFACE.BOOTSTRAP().BootstrapInterface)({vendor: Date}); // no vendor function
+var bs = new (TGI.INTERFACE.BOOTSTRAP().BootstrapInterface)({vendor: Date}); // no vendor function TODO wtf
 var app = new tgi.Application({interface: bs});
 var nav = new tgi.Presentation();
 app.setInterface(bs);
@@ -15,14 +15,14 @@ app.setPresentation(nav);
 var name,
   isDude,
   color;
-var userQuerieCommand = new tgi.Command({
-  name: 'User Queries', type: 'Procedure', contents: new tgi.Procedure({
+var userQueryCommand = new tgi.Command({
+  name: 'User Querys', type: 'Procedure', contents: new tgi.Procedure({
     tasks: [
       function () {
         var task = this;
         app.ask('What is first your name?', new tgi.Attribute({name: 'name'}), function (reply) {
           if (!reply)
-            userQuerieCommand.abort();
+            userQueryCommand.abort();
           else {
             name = reply;
             task.complete();
@@ -40,7 +40,7 @@ var userQuerieCommand = new tgi.Command({
         var task = this;
         app.choose('OK ' + (isDude ? 'mr. ' : 'ms. ') + name + ', please pick a color.\nany color..\n\nplease pick one now', ['red', 'green', 'blue', 'black', 'white'], function (choice) {
           if (!choice)
-            userQuerieCommand.abort();
+            userQueryCommand.abort();
           else {
             color = choice;
             task.complete();
@@ -56,7 +56,7 @@ var userQuerieCommand = new tgi.Command({
     ]
   })
 });
-userQuerieCommand.onEvent('*', function (event) {
+userQueryCommand.onEvent('*', function (event) {
   if (event == 'Aborted') {
     app.info('ok fine be that way');
   }
@@ -107,7 +107,7 @@ var commands =   new tgi.Command({name: 'Commands', type: 'Menu', contents: [
   presCommand,
   funcCommand,
   procCommand
-]})
+]});
 
 /**
  * Navigation
@@ -121,7 +121,7 @@ nav.set('contents', [
     stubCurly
   ]}),
   commands,
-  userQuerieCommand,
+  userQueryCommand,
   '-',
   new tgi.Command({name: 'Account'})
 ]);
