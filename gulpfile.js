@@ -16,6 +16,7 @@ var libFiles = [
   'lib/tgi-interface-bootstrap.lib.js',
   'lib/tgi-interface-bootstrap.source.js',
   'lib/tgi-interface-bootstrap-navigation.source.js',
+  'lib/tgi-interface-bootstrap-panels.source.js',
   'lib/tgi-interface-bootstrap-queries.source.js',
   'lib/_packaging/lib-footer'
 ];
@@ -85,9 +86,34 @@ gulp.task('copyjQuery', function () {
   return gulp.src(['node_modules/jquery/dist/**', 'node_modules/jquery/MIT-LICENSE.txt']).pipe(gulp.dest('dist/jquery'));
 });
 
+// Copy marked
+gulp.task('copyMarked', function () {
+  return gulp.src(['node_modules/marked/lib/marked.js', 'node_modules/marked/marked.min.js', 'node_modules/marked/LICENSE']).pipe(gulp.dest('dist/marked'));
+});
+
 // Copy Bootstrap
 gulp.task('copyBootstrap', function () {
   return gulp.src(['node_modules/bootstrap/dist/**', 'node_modules/bootstrap/LICENSE']).pipe(gulp.dest('dist/bootstrap'));
+});
+
+// Copy Bootstrap Datepicker
+gulp.task('copyBootstrapDatepicker', function () {
+  return gulp.src(['node_modules/bootstrap-datepicker/dist/**', 'node_modules/bootstrap/LICENSE']).pipe(gulp.dest('dist/bootstrap-datepicker'));
+});
+
+// Copy Bootstrap Notify
+gulp.task('copyBootstrapNotify', function () {
+  return gulp.src(['node_modules/bootstrap-notify/dist/**', 'node_modules/bootstrap-notify/LICENSE']).pipe(gulp.dest('dist/bootstrap-notify'));
+});
+
+// Copy Bootstrap Notify
+gulp.task('copyAnimateCSS', function () {
+  return gulp.src(['node_modules/animate.css/*.css', 'node_modules/animate.css/README.md']).pipe(gulp.dest('dist/animate-css'));
+});
+
+// Copy Font Awesome
+gulp.task('copyFontAwesome', function () {
+  return gulp.src(['node_modules/font-awesome/css/**/*', 'node_modules/font-awesome/fonts/**/*', 'node_modules/font-awesome/README.md'], {base: 'node_modules/font-awesome'}).pipe(gulp.dest('dist/font-awesome'));
 });
 
 // Coverage Task
@@ -110,5 +136,5 @@ gulp.task('spec', ['lint'], function (callback) {
 });
 
 // Default & Travis CI Task
-gulp.task('default', ['copyjQuery', 'copyBootstrap', 'test']);
+gulp.task('default', ['copyjQuery', 'copyMarked', 'copyBootstrap', 'copyBootstrapNotify', 'copyBootstrapDatepicker', 'copyAnimateCSS', 'copyFontAwesome', 'test']);
 gulp.task('travis', ['test']);

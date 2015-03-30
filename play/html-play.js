@@ -16,7 +16,7 @@ var name,
   isDude,
   color;
 var userQueryCommand = new tgi.Command({
-  name: 'User Querys', type: 'Procedure', contents: new tgi.Procedure({
+  name: 'User Queries', type: 'Procedure', contents: new tgi.Procedure({
     tasks: [
       function () {
         var task = this;
@@ -122,6 +122,9 @@ nav.set('contents', [
   ]}),
   commands,
   userQueryCommand,
+  new tgi.Command({name: 'Info', type: 'Function', theme: 'warning', icon: 'glyphicon-glass', contents: function () {
+    app.info('The current date and time is ' + new Date())
+  }}),
   '-',
   new tgi.Command({name: 'Account'})
 ]);
@@ -130,6 +133,6 @@ nav.set('contents', [
  * Start the app
  */
 app.start(function (request) {
-  app.info('app got ' + JSON.stringify(request));
+  app.info('' + request);
 });
-app.info("What's up?");
+
