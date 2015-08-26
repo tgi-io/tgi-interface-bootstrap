@@ -2615,7 +2615,7 @@ var cpad = function (expr, length, fillChar) {
 TGI.INTERFACE = TGI.INTERFACE || {};
 TGI.INTERFACE.BOOTSTRAP = function () {
   return {
-    version: '0.0.1',
+    version: '0.0.2',
     BootstrapInterface: BootstrapInterface
   };
 };
@@ -2953,19 +2953,19 @@ BootstrapInterface.prototype.activatePanel = function (command) {
   }
 
   /**
-   * Remove listeners before deleting
+   * Remove listeners before deleting -- todo WTF ?
    */
   for (i = 0; i < panel.listeners.length; i++) {
     var ele = panel.listeners[i];
     $(ele).off();
   }
-  panel.buttonDiv = undefined;
+  panel.buttonDiv = undefined; // WTF ends HERE!!!!!!!!!!!
 
   /**
    * Render panel body based on presentation mode
    */
   switch (command.presentationMode) {
-    case 'View':
+    case 'View': // todo edit/view wacked (says view renders edit ???)
       bootstrapInterface.renderPanelBodyView(panel, command);
       $(panel.panelBody).show('fast'); //
       $(panel.panelHide).show();
