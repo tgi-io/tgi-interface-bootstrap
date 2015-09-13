@@ -26,8 +26,8 @@ var defaultCommand = new tgi.Command({
 var beerPresentation = new tgi.Presentation();
 var bottles = [];
 for (var beer = 99; beer > 0; beer--) bottles.push('' + beer + ' bottles of beer on the wall, ' +
-beer + ' bottles of beer. Take one down, pass it around, ' +
-(beer - 1) + ' bottles of beer on the wall...');
+  beer + ' bottles of beer. Take one down, pass it around, ' +
+  (beer - 1) + ' bottles of beer on the wall...');
 beerPresentation.set('contents', bottles);
 var beerCommand = new tgi.Command({
   name: 'Beer',
@@ -81,7 +81,7 @@ var commandCommand = new tgi.Command({
 });
 
 /**
- * Attribute (Minimal) Presentation
+ * Attribute Presentation
  */
 var attributePresentation = new tgi.Presentation();
 attributePresentation.set('contents', [
@@ -101,16 +101,70 @@ attributePresentation.set('contents', [
   new tgi.Attribute({name: 'sex', type: 'Boolean', value: true}),
   new tgi.Attribute({name: 'drugs', type: 'Boolean', value: false}),
   new tgi.Attribute({name: 'IQ', type: 'Number', value: 100})
-
-
-
 ]);
 var attributeCommand = new tgi.Command({
   name: 'Attribute',
   type: 'Presentation',
-  theme: 'success',
+  theme: 'primary',
   icon: 'fa-list-alt',
   contents: attributePresentation
+});
+
+
+// Create actor class
+var Actor = function (args) {
+  tgi.Model.call(this, args);
+  this.modelType = "Actor";
+  this.attributes.push(new tgi.Attribute('Name'));
+  this.attributes.push(new tgi.Attribute('Born', 'Number'));
+  this.attributes.push(new tgi.Attribute('Sex'));
+};
+Actor.prototype = Object.create(tgi.Model.prototype);
+var actor = new Actor();
+var actors = new tgi.List(actor);
+var actorsInfo = [
+  // Actor              Born  Male
+  ['Jack Nicholson', 1937, 'male'],
+  ['Meryl Streep', 1949, 'female'],
+  ['Marlon Brando', 1924, 'male'],
+  ['Cate Blanchett', 1969, 'female'],
+  ['Robert De Niro', 1943, 'male'],
+  ['Judi Dench', 1934, 'female'],
+  ['Al Pacino', 1940, 'male'],
+  ['Nicole Kidman', 1967, 'female'],
+  ['Daniel Day-Lewis', 1957, 'male'],
+  ['Shirley MacLaine', 1934, 'female'],
+  ['Dustin Hoffman', 1937, 'male'],
+  ['Jodie Foster', 1962, 'female'],
+  ['Tom Hanks', 1956, 'male'],
+  ['Kate Winslet', 1975, 'female'],
+  ['Anthony Hopkins', 1937, 'male'],
+  ['Angelina Jolie', 1975, 'female'],
+  ['Paul Newman', 1925, 'male'],
+  ['Sandra Bullock', 1964, 'female'],
+  ['Denzel Washington', 1954, 'male'],
+  ['Renée Zellweger', 1969, 'female']
+];
+for (var i in actorsInfo) {
+  if (actorsInfo.hasOwnProperty(i)) {
+    actors.addItem();
+    actors.set('Name', actorsInfo[i][0]);
+    actors.set('Born', actorsInfo[i][1]);
+    actors.set('Sex', actorsInfo[i][2]);
+  }
+}
+
+/**
+ * List Presentation
+ */
+var listPresentation = new tgi.Presentation();
+listPresentation.set('contents', [actors]);
+var listCommand = new tgi.Command({
+  name: 'list',
+  type: 'Presentation',
+  theme: 'success',
+  icon: 'fa-table',
+  contents: listPresentation
 });
 
 /**
@@ -121,7 +175,8 @@ nav.set('contents', [
   infoCommand,
   beerCommand,
   commandCommand,
-  attributeCommand
+  attributeCommand,
+  listCommand
 ]);
 
 /**
@@ -130,4 +185,4 @@ nav.set('contents', [
 app.start(function (request) {
   app.info('app got ' + request);
 });
-bs.activatePanel(attributeCommand);
+bs.activatePanel(listCommand);

@@ -10,7 +10,7 @@ var root = this;
 var TGI = {
   CORE: function () {
     return {
-      version: '0.3.2',
+      version: '0.3.10',
       Application: Application,
       Attribute: Attribute,
       Command: Command,
@@ -388,7 +388,7 @@ function Command(args) {
   args = args || {};
   var i;
   var unusedProperties = getInvalidProperties(args,
-    ['name', 'description', 'type', 'contents', 'scope', 'timeout', 'theme', 'icon', 'bucket', 'presentationMode']);
+    ['name', 'description', 'type', 'contents', 'scope', 'timeout', 'theme', 'icon', 'bucket', 'presentationMode','location','images']);
   var errorList = [];
   for (i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
   if (errorList.length > 1) throw new Error('error creating Command: multiple errors');
@@ -484,7 +484,7 @@ Command.prototype._emitEvent = function (event, obj) {
 };
 Command.prototype.execute = function (context) {
   if (!this.type) throw new Error('command not implemented');
-  if (!contains(['Function', 'Procedure', 'Presentation'], this.type)) throw new Error('command type ' + this.type + ' not implemented');
+  if (!contains(['Function', 'Procedure', 'Menu', 'Presentation'], this.type)) throw new Error('command type ' + this.type + ' not implemented');
   var errors;
   switch (this.type) {
     case 'Presentation':
@@ -509,6 +509,9 @@ Command.prototype.execute = function (context) {
         break;
       case 'Procedure':
         setTimeout(procedureExecuteInit, 0);
+        break;
+      case 'Menu':
+        context.render(this, 'View');
         break;
       case 'Presentation':
         context.render(this.contents, this.presentationMode);
@@ -1118,13 +1121,13 @@ Model.prototype.onEvent = function (events, callback) {
   this._eventListeners.push({events: events, callback: callback});
   return this;
 };
-Model.prototype._emitEvent = function (event) {
+Model.prototype._emitEvent = function (event, meta) { // todo meta is app defined - no test for it
   var i;
   for (i in this._eventListeners) {
     if (this._eventListeners.hasOwnProperty(i)) {
       var subscriber = this._eventListeners[i];
       if ((subscriber.events.length && subscriber.events[0] === '*') || contains(subscriber.events, event)) {
-        subscriber.callback.call(this, event);
+        subscriber.callback.call(this, event, meta);
       }
     }
   }
@@ -1396,7 +1399,11 @@ function Transport(location, callback) {
     }
   });
   self.socket.on('message', function (obj) {
-    console.log('socket.io (' + self.location + ') message: ' + obj);
+    if (self.rawCallBack) {
+      self.rawCallBack(obj);
+    } else {
+      console.log('socket.io (' + self.location + ') message: ' + obj);
+    }
   });
   self.socket.on('disconnect', function (reason) {
     self.connected = false;
@@ -1423,6 +1430,12 @@ Transport.hostMessageProcess = function (obj, fn) {
  * Methods
  */
 /* istanbul ignore next */
+Transport.prototype.sendRaw = function (message) {
+  this.socket.send(message);
+};
+Transport.prototype.onRaw = function (callback) {
+  this.rawCallBack = callback;
+};
 Transport.prototype.send = function (message, callback) {
   var self = this;
   if (typeof message == 'undefined') throw new Error('message required');
@@ -2072,11 +2085,11 @@ Presentation.prototype.getObjectStateErrors = function (modelCheckOnly) {
     var gotError = false;
     if (contents instanceof Array) {
       for (i = 0; i < contents.length; i++) {
-        if (!(contents[i] instanceof Command || contents[i] instanceof Attribute || typeof contents[i] == 'string'))
+        if (!(contents[i] instanceof Command || contents[i] instanceof Attribute || contents[i] instanceof List || typeof contents[i] == 'string'))
           gotError = true;
       }
       if (gotError)
-        this.validationErrors.push('contents elements must be Command, Attribute or string');
+        this.validationErrors.push('contents elements must be Command, Attribute, List or string');
     } else {
       this.validationErrors.push('contents must be Array');
     }
@@ -2985,7 +2998,7 @@ BootstrapInterface.prototype.activatePanel = function (command) {
 BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
   var bootstrapInterface = this;
   var addEle = BootstrapInterface.addEle;
-  var i;
+  var i,j;
   var contents = command.contents.get('contents');
   panel.panelForm.innerHTML = '';
   for (i = 0; i < contents.length; i++) {
@@ -3000,6 +3013,7 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
       }
     }
     if (contents[i] instanceof Attribute) renderAttribute(contents[i]);
+    if (contents[i] instanceof List) renderList(contents[i]);
     if (contents[i] instanceof Command) renderCommand(contents[i]);
   }
   /**
@@ -3137,6 +3151,71 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
         }
     }
   }
+
+  /**
+   * function to render List
+   */
+
+  function renderList(list) {
+    console.log(list);
+
+    var shizzle =
+      '<thead>' +
+      '<tr>' +
+      '<th>#</th>' +
+      '<th>First Name</th>' +
+      '<th>Last Name</th>' +
+      '<th>Username</th>' +
+      '</tr>' +
+      '</thead>' +
+
+      '<tbody>' +
+      '<tr>' +
+      '<td>1</td>' +
+      '<td>Mark</td>' +
+      '<td>Otto</td>' +
+      '<td>@mdo</td>' +
+      '</tr>' +
+      '</tbody>' +
+      '';
+
+    var txtDiv = document.createElement("table");
+    txtDiv.className = 'table';
+
+     //txtDiv.innerHTML = shizzle;
+
+    /**
+     * Header
+     */
+    var tHead = addEle(txtDiv, 'thead');
+    var tHeadRow = addEle(tHead, 'tr');
+    for (j = 1; j < list.model.attributes.length; j++) { // skip id (0))
+      var hAttribute = list.model.attributes[j];
+      addEle(tHeadRow, 'th').innerHTML = hAttribute.label;
+    }
+
+    /**
+     * Now each row in list
+     */
+    var gotData = list.moveFirst();
+    var tBody = addEle(txtDiv, 'tbody');
+    while (gotData) {
+      var tBodyRow = addEle(tBody, 'tr');
+      for (j = 1; j < list.model.attributes.length; j++) { // skip id (0))
+        var dAttribute = list.model.attributes[j];
+        addEle(tBodyRow, 'td').innerHTML = list.get(dAttribute.name);
+      }
+      gotData = list.moveNext();
+    }
+
+
+
+
+    panel.panelForm.appendChild(txtDiv);
+
+
+  }
+
 
   /**
    * function to render Command

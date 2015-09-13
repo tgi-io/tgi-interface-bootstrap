@@ -90,7 +90,6 @@ body {
     }
 }
 
-
 /*
     For bootstrap-notify
 */
@@ -99,3 +98,10 @@ body {
     -webkit-box-shadow: 4px 4px 10px 2px rgba(0, 0, 0, 0.45);
     box-shadow: 4px 4px 10px 2px rgba(0, 0, 0, 0.45);
 }
+/*
+    Borders for tables
+*/
+
+.table { border: 1px solid #2f2f2f; }
+.table thead > tr > th { border-bottom: none; }
+.table thead > tr > th, .table tbody > tr > th, .table tfoot > tr > th, .table thead > tr > td, .table tbody > tr > td, .table tfoot > tr > td { border: 1px solid #2f2f2f; }

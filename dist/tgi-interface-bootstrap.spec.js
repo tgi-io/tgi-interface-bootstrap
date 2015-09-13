@@ -50,7 +50,7 @@ spec.test('lib/tgi-spec-intro', 'tgi-core', 'Core Repository', function (callbac
   spec.paragraph('Core constructors, models, stores and interfaces.  The constructor functions define the object ' +
   '"classes" used by the framework.  The Model Constructor is a key part of the core that defines the system ' +
   'functionality for the framework.  The framework is further extended with a Store and Interface abstract that ' +
-  'provides data store and user interface plugins.');
+  'provides data store and user interface vendor implementations.');
   spec.example('TGI.CORE function exposes library', undefined, function () {
     this.log(TGI.CORE().version);
   });
@@ -724,6 +724,16 @@ spec.test('tgi-core/lib/tgi-core-command.spec.js', 'Command', 'encapsulates task
         });
       });
     });
+    spec.heading('location', function () {
+      spec.example('optional for control location {x,y}', undefined, function () {
+        new Command({name: 'options', location: {x: 0, y: 0}});
+      });
+    });
+    spec.heading('images', function () {
+      spec.example('optional for control graphical representation', undefined, function () {
+        new Command({name: 'options', images: []});
+      });
+    });
     spec.heading('presentationMode', function () {
       spec.paragraph('this property is used for presentation commands to specify the mode of presentation');
       spec.example('default is View', 'View', function () {
@@ -826,7 +836,7 @@ spec.test('tgi-core/lib/tgi-core-command.spec.js', 'Command', 'encapsulates task
         new Command().execute();
       });
       spec.example('presentation commands require interface param', Error('interface param required'), function () {
-        new Command({type: 'Presentation',contents:new Presentation()}).execute();
+        new Command({type: 'Presentation', contents: new Presentation()}).execute();
       });
     });
     spec.heading('restart', function () {
@@ -886,7 +896,7 @@ spec.test('tgi-core/lib/tgi-core-command.spec.js', 'Command', 'encapsulates task
     });
 
     // Menu todo - placeholder or not needed?
-    spec.example('Menu', Error('command type Menu not implemented'), function () {
+    spec.xexample('Menu', Error('command type Menu not implemented'), function () {
       var cmd = new Command({
         name: 'menuCommand',
         description: 'menu command test',
@@ -909,7 +919,7 @@ spec.test('tgi-core/lib/tgi-core-command.spec.js', 'Command', 'encapsulates task
         cmd.contents = 123;
         cmd.execute();
       });
-      this.shouldThrowError(Error('error executing Presentation: contents elements must be Command, Attribute or string'), function () {
+      this.shouldThrowError(Error('error executing Presentation: contents elements must be Command, Attribute, List or string'), function () {
         cmd.contents = new Presentation();
         cmd.contents.set('contents', [new Command(), new Attribute({name: 'meh'}), true]);
         cmd.execute();
@@ -2841,7 +2851,6 @@ spec.test('tgi-core/lib/tgi-core-transport.spec.js', 'Transport', 'messages betw
     });
     //spec.examplesDisabled = false;
   });
-
 });
 
 /**---------------------------------------------------------------------------------------------------------------------
@@ -3305,10 +3314,10 @@ spec.test('tgi-core/lib/models/tgi-core-model-presentation.spec.js', 'Presentati
         pres.set('contents', true);
         return pres.getObjectStateErrors();
       });
-      spec.example('array elements must be Command , Attribute or String', 'contents elements must be Command, Attribute or string', function () {
+      spec.example('contents elements must be Command, Attribute, List or string', 'contents elements must be Command, Attribute, List or string', function () {
         var pres = new Presentation();
         // strings with prefix # are heading, a dash - by itself is for a visual separator
-        pres.set('contents', ['#heading', new Command(), new Attribute({name: 'meh'})]);
+        pres.set('contents', ['#heading', new Command(), new Attribute({name: 'meh'}),new List(new Model())]);
         this.shouldBeTrue(pres.getObjectStateErrors().length === 0);
         pres.set('contents', [new Command(), new Attribute({name: 'meh'}), true]);
         return pres.getObjectStateErrors();
