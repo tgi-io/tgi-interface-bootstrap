@@ -2998,7 +2998,7 @@ BootstrapInterface.prototype.activatePanel = function (command) {
 BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
   var bootstrapInterface = this;
   var addEle = BootstrapInterface.addEle;
-  var i,j;
+  var i, j;
   var contents = command.contents.get('contents');
   panel.panelForm.innerHTML = '';
   for (i = 0; i < contents.length; i++) {
@@ -3013,7 +3013,7 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
       }
     }
     if (contents[i] instanceof Attribute) renderAttribute(contents[i]);
-    if (contents[i] instanceof List) renderList(contents[i]);
+    if (contents[i] instanceof List) renderList(contents[i],command.theme);
     if (contents[i] instanceof Command) renderCommand(contents[i]);
   }
   /**
@@ -3156,39 +3156,18 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
    * function to render List
    */
 
-  function renderList(list) {
-    console.log(list);
+  function renderList(list,theme) {
 
-    var shizzle =
-      '<thead>' +
-      '<tr>' +
-      '<th>#</th>' +
-      '<th>First Name</th>' +
-      '<th>Last Name</th>' +
-      '<th>Username</th>' +
-      '</tr>' +
-      '</thead>' +
-
-      '<tbody>' +
-      '<tr>' +
-      '<td>1</td>' +
-      '<td>Mark</td>' +
-      '<td>Otto</td>' +
-      '<td>@mdo</td>' +
-      '</tr>' +
-      '</tbody>' +
-      '';
 
     var txtDiv = document.createElement("table");
-    txtDiv.className = 'table';
-
-     //txtDiv.innerHTML = shizzle;
+    txtDiv.className = 'table table-condensed table-bordered table-hover-'+theme;
+    //bootstrapInterface.info(txtDiv.className);
 
     /**
      * Header
      */
     var tHead = addEle(txtDiv, 'thead');
-    var tHeadRow = addEle(tHead, 'tr');
+    var tHeadRow = addEle(tHead, 'tr','sucxcess');
     for (j = 1; j < list.model.attributes.length; j++) { // skip id (0))
       var hAttribute = list.model.attributes[j];
       addEle(tHeadRow, 'th').innerHTML = hAttribute.label;
@@ -3200,19 +3179,23 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
     var gotData = list.moveFirst();
     var tBody = addEle(txtDiv, 'tbody');
     while (gotData) {
-      var tBodyRow = addEle(tBody, 'tr');
+      var tBodyRow = addEle(tBody, 'tr','sucxcess');
+      var idAttribute = list.model.attributes[0];
+      $(tBodyRow).data("id", list.get(idAttribute.name));
+      $(tBodyRow).click(function (e) {
+        // bootstrapInterface.dispatch(new Request({type: 'Command', command: action}));
+        bootstrapInterface.info('you picked #' + $(e.currentTarget).data("id"));
+        console.log('fuck ' + $(e.currentTarget).data("id"));
+        e.preventDefault();
+      });
+
       for (j = 1; j < list.model.attributes.length; j++) { // skip id (0))
         var dAttribute = list.model.attributes[j];
         addEle(tBodyRow, 'td').innerHTML = list.get(dAttribute.name);
       }
       gotData = list.moveNext();
     }
-
-
-
-
     panel.panelForm.appendChild(txtDiv);
-
 
   }
 

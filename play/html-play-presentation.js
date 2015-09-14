@@ -9,6 +9,10 @@ app.setInterface(bs);
 app.set('brand', 'Presentation');
 app.setPresentation(nav);
 
+var i;
+var themes =['default', 'primary', 'success', 'info', 'warning', 'danger'];
+
+
 /**
  * Default (Minimal) Presentation
  */
@@ -42,7 +46,7 @@ var beerCommand = new tgi.Command({
  */
 var infoPresentation = new tgi.Presentation();
 infoPresentation.set('contents', [
-  '#Info',
+  'Info\n---',
   'This is themed `info` with an icon *(glyphicon-info-sign)*.',
   '-',
   'Note the divider above and below to understand _read the code Luke_',
@@ -145,9 +149,11 @@ var actorsInfo = [
   ['Denzel Washington', 1954, 'male'],
   ['Renée Zellweger', 1969, 'female']
 ];
-for (var i in actorsInfo) {
+var id = 0;
+for (i in actorsInfo) {
   if (actorsInfo.hasOwnProperty(i)) {
     actors.addItem();
+    actors.set('id', id++);
     actors.set('Name', actorsInfo[i][0]);
     actors.set('Born', actorsInfo[i][1]);
     actors.set('Sex', actorsInfo[i][2]);
@@ -158,13 +164,28 @@ for (var i in actorsInfo) {
  * List Presentation
  */
 var listPresentation = new tgi.Presentation();
-listPresentation.set('contents', [actors]);
+listPresentation.set('contents', ['Lists\n---', actors, defaultCommand,
+  infoCommand,
+  beerCommand
+]);
+
+var listCommandContents = ['Select Theme','-'];
+for (i = 0; i < themes.length; i++) {
+  var theme = themes[i];
+  listCommandContents.push(new tgi.Command({
+    name: theme + ' list',
+    type: 'Presentation',
+    theme: theme,
+    icon: 'fa-table',
+    contents: listPresentation
+  }));
+}
+
 var listCommand = new tgi.Command({
   name: 'list',
-  type: 'Presentation',
-  theme: 'success',
+  type: 'Menu',
   icon: 'fa-table',
-  contents: listPresentation
+  contents: listCommandContents
 });
 
 /**
@@ -185,4 +206,9 @@ nav.set('contents', [
 app.start(function (request) {
   app.info('app got ' + request);
 });
-bs.activatePanel(listCommand);
+//bs.activatePanel(listCommandContents[2]);
+//bs.activatePanel(listCommandContents[3]);
+//bs.activatePanel(listCommandContents[4]);
+//bs.activatePanel(listCommandContents[5]);
+//bs.activatePanel(listCommandContents[6]);
+//bs.activatePanel(listCommandContents[7]);
