@@ -2628,7 +2628,7 @@ var cpad = function (expr, length, fillChar) {
 TGI.INTERFACE = TGI.INTERFACE || {};
 TGI.INTERFACE.BOOTSTRAP = function () {
   return {
-    version: '0.0.2',
+    version: '0.0.3',
     BootstrapInterface: BootstrapInterface
   };
 };
@@ -3167,7 +3167,7 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
      * Header
      */
     var tHead = addEle(txtDiv, 'thead');
-    var tHeadRow = addEle(tHead, 'tr','sucxcess');
+    var tHeadRow = addEle(tHead, 'tr');
     for (j = 1; j < list.model.attributes.length; j++) { // skip id (0))
       var hAttribute = list.model.attributes[j];
       addEle(tHeadRow, 'th').innerHTML = hAttribute.label;
@@ -3179,7 +3179,7 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
     var gotData = list.moveFirst();
     var tBody = addEle(txtDiv, 'tbody');
     while (gotData) {
-      var tBodyRow = addEle(tBody, 'tr','sucxcess');
+      var tBodyRow = addEle(tBody, 'tr');
       var idAttribute = list.model.attributes[0];
       $(tBodyRow).data("id", list.get(idAttribute.name));
       $(tBodyRow).click(function (e) {
