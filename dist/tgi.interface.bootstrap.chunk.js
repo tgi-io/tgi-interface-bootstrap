@@ -593,7 +593,7 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
       if (!validating) {
         switch (attribute.type) {
           case 'Boolean':
-            console.log('fuck ' + attribute.value);
+            console.log('fuck ' + attribute.value + ' - ' + input.checked);
             if (attribute.value)
               input.setAttribute("checked", "true");
             else

@@ -92,30 +92,26 @@ var drinks = ['Water', 'Coke', 'Coffee'];
 
 var firstName = new tgi.Attribute({name: 'firstName', label: 'First Name', type: 'String(20)', value: 'John'});
 var lastName = new tgi.Attribute({name: 'lastName', label: 'Last Name', type: 'String(25)', value: 'Doe'});
-var birthday=new tgi.Attribute({name: 'birthDate', label: 'Birth Date', type: 'Date', value: new Date()});
-var drink = new tgi.Attribute({name: 'drink', type: 'String(25)', quickPick: drinks, validationRule: {isOneOf: drinks}});
+var birthday = new tgi.Attribute({name: 'birthDate', label: 'Birth Date', type: 'Date', value: new Date()});
+var drink = new tgi.Attribute({
+  name: 'drink',
+  type: 'String(25)',
+  quickPick: drinks,
+  validationRule: {isOneOf: drinks}
+});
 var sex = new tgi.Attribute({name: 'sex', type: 'Boolean', value: true});
 var drugs = new tgi.Attribute({name: 'drugs', type: 'Boolean', value: false});
 var iq = new tgi.Attribute({name: 'IQ', type: 'Number', value: 1, validationRule: {range: [90, 160]}});
-
+var attributeText = new tgi.Text('### ATTRIBUTES\n\n_xxx_ yyy\n\n_xxx_ yyy\n\n*xxx* yyy\n\n');
 attributePresentation.set('contents', [
-  'Enter some stuff',
-  '-',
-  new tgi.Attribute({name: 'login', label: 'Login', type: 'String(20)', validationRule: {required: true}, value: ''}),
-  new tgi.Attribute({name: 'password', label: 'Password', type: 'String(20)', hint: {password: true}, value: ''}),
-  '-',
   firstName,
   lastName,
-  new tgi.Attribute({name: 'address', label: 'Address', type: 'String(50)'}),
-  new tgi.Attribute({name: 'city', label: 'City', type: 'String(35)'}),
-  new tgi.Attribute({name: 'state', label: 'State', type: 'String(2)'}),
-  new tgi.Attribute({name: 'zip', label: 'Zip Code', type: 'String(10)', placeHolder: '#####-####'}),
   birthday,
   drink,
   sex,
   drugs,
   iq,
-  '-',
+  '>',
   new tgi.Command({
     name: 'validate',
     type: 'Function', contents: function () {
@@ -129,9 +125,7 @@ attributePresentation.set('contents', [
     }
   }),
   new tgi.Command({
-    name: 'set GW',
-    type: 'Function', contents: function () {
-      console.log('poop');
+    name: '1st Prez', type: 'Function', contents: function () {
       firstName.set('George');
       lastName.set('Washington');
       birthday.set(birthday.coerce('2/22/1732'));
@@ -139,13 +133,22 @@ attributePresentation.set('contents', [
       sex.set(false);
       drugs.set(true);
     }
-  })
-
+  }),
+  new tgi.Command({
+    name: 'Show Attributes', type: 'Function', contents: function () {
+      try {
+        attributeText.set('#I just set this text here!')
+      } catch (e) {
+        console.log('error ' + e);
+      }
+    }
+  }),
+  attributeText
 ]);
 var attributeCommand = new tgi.Command({
   name: 'Attribute',
   type: 'Presentation',
-  theme: 'primary',
+  theme: 'success',
   icon: 'fa-list-alt',
   contents: attributePresentation
 });
@@ -281,7 +284,7 @@ var domTestCommand = new tgi.Command({
   name: 'dom test',
   type: 'Function',
   contents: function () {
-    var iterations = 10000;
+    var iterations = 100; // 10000 good for testing
     app.info('Running ' + iterations + ' iterations.');
     console.log('shitty balls');
     setTimeout(function () {
@@ -315,4 +318,4 @@ nav.set('contents', [
 app.start(function (request) {
   app.info('app got ' + request);
 });
-attributeCommand.execute(bs);
+commandCommand.execute(bs);

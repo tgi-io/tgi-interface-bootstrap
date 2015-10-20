@@ -10,7 +10,7 @@ var root = this;
 var TGI = {
   CORE: function () {
     return {
-      version: '0.4.3',
+      version: '0.4.5',
       Application: Application,
       Attribute: Attribute,
       Command: Command,
@@ -27,6 +27,7 @@ var TGI = {
       Request: Request,
       Session: Session,
       Store: Store,
+      Text: Text,
       Transport: Transport,
       User: User,
       Workspace: Workspace,
@@ -1372,6 +1373,62 @@ Store.prototype.getList = function () {
 };
 
 /**---------------------------------------------------------------------------------------------------------------------
+ * tgi-core/lib/core/tgi-core-text.source.js
+ */
+/**
+ * Constructor
+ */
+function Text(contents) {
+  if (false === (this instanceof Text)) throw new Error('new operator required');
+  this.contents = contents || '';
+  this._eventListeners = [];
+}
+/**
+ * Methods
+ */
+Text.prototype.toString = function () {
+  return 'Text: \'' + (this.contents || '') + '\'';
+};
+Text.prototype.get = function () {
+  return this.contents;
+};
+Text.prototype.set = function (newValue) {
+  this.contents = newValue;
+  this._emitEvent('StateChange');
+  return this.contents;
+};
+Text.prototype._emitEvent = function (event) {
+  var i;
+  for (i in this._eventListeners) {
+    if (this._eventListeners.hasOwnProperty(i)) {
+      var subscriber = this._eventListeners[i];
+      if ((subscriber.events.length && subscriber.events[0] === '*') || contains(subscriber.events, event)) {
+        subscriber.callback.call(this, event);
+      }
+    }
+  }
+};
+Text.prototype.onEvent = function (events, callback) {
+  if (!(events instanceof Array)) {
+    if (typeof events != 'string') throw new Error('subscription string or array required');
+    events = [events]; // coerce to array
+  }
+  if (typeof callback != 'function') throw new Error('callback is required');
+  // Check known Events
+  for (var i in events) {
+    if (events.hasOwnProperty(i))
+      if (events[i] != '*')
+        if (!contains(['StateChange'], events[i]))
+          throw new Error('Unknown command event: ' + events[i]);
+  }
+  // All good add to chain
+  this._eventListeners.push({events: events, callback: callback});
+  return this;
+};
+Text.prototype.offEvent = function () {
+  this._eventListeners = [];
+};
+/**---------------------------------------------------------------------------------------------------------------------
  * tgi-core/lib/core/tgi-core-transport.source.js
  */
 /* istanbul ignore next */
@@ -2105,11 +2162,11 @@ Presentation.prototype.getObjectStateErrors = function (modelCheckOnly) {
     var gotError = false;
     if (contents instanceof Array) {
       for (i = 0; i < contents.length; i++) {
-        if (!(contents[i] instanceof Command || contents[i] instanceof Attribute || contents[i] instanceof List || typeof contents[i] == 'string'))
+        if (!(contents[i] instanceof Text || contents[i] instanceof Command || contents[i] instanceof Attribute || contents[i] instanceof List || typeof contents[i] == 'string'))
           gotError = true;
       }
       if (gotError)
-        this.validationErrors.push('contents elements must be Command, Attribute, List or string');
+        this.validationErrors.push('contents elements must be Text, Command, Attribute, List or string');
     } else {
       this.validationErrors.push('contents must be Array');
     }
@@ -3052,10 +3109,9 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
   var addEle = BootstrapInterface.addEle;
   var i, j;
   var contents = command.contents.get('contents');
-  //panel.panelForm.innerHTML = '';
+  panel.buttonDiv=null;
   $(panel.panelForm).empty();
   for (i = 0; i < contents.length; i++) {
-    // String markdown or separator '-'
     if (typeof contents[i] == 'string') {
       if (contents[i] == '-') {
         panel.panelForm.appendChild(document.createElement("hr"));
@@ -3193,6 +3249,7 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
           inputGroupDropDownMenu.innerHTML = daList;
           $(inputGroupDropDownMenu).click(function (e) {
             input.value = e.originalEvent.srcElement.innerText;
+            validateInput();
             e.preventDefault();
           });
           panel.listeners.push(inputGroupDropDownMenu); // so we can avoid leakage on deleting panel
@@ -3202,7 +3259,7 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
     /**
      * When focus lost on attribute - validate it
      */
-    $(input).on('focusout', function (event) {
+    var validateInput = function (event) {
       switch (attribute.type) {
         case 'Date':
           attribute.value = (input.value === '') ? null : attribute.coerce(input.value);
@@ -3223,40 +3280,37 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
             input.value = attribute.value;
           break;
       }
-      validating = true;
       attribute.validate(function () {
-        validating = false;
-        renderHelpText(attribute.validationMessage);
-        console.log('attribute.validate ' + attribute.name + ': ' + attribute.value + (attribute.validationMessage ? ' (' + attribute.validationMessage + ')' : ''));
       });
-    });
+    };
+    $(input).on('focusout', validateInput);
     panel.listeners.push(input); // so we can avoid leakage on deleting panel
     /**
      * Monitor state changes to attribute
      */
+    attribute.onEvent('Validate', function () {
+      console.log('* Validate onEvent() ' + attribute.validationMessage);
+      attribute._validationDone = true;
+    });
     attribute.onEvent('StateChange', function () {
-      if (!validating) {
-        switch (attribute.type) {
-          case 'Boolean':
-            console.log('fuck ' + attribute.value);
-            if (attribute.value)
-              input.setAttribute("checked", "true");
-            else
-              input.removeAttribute("checked");
-            break;
-          case 'Date':
-            input.value = attribute.value ? '' + (1 + attribute.value.getMonth()) + '/' + attribute.value.getDate() + '/' + attribute.value.getFullYear() : '';
-            break;
-          case 'Number':
-            input.setAttribute("value", attribute.value ? attribute.value : 0);
-            break;
-          default: // String
-            input.value = attribute.value ? '' + attribute.value : '';
-            break;
-        }
-        renderHelpText(attribute.validationMessage);
-        console.log('StateChange ' + attribute.name + ': ' + attribute.value + (attribute.validationMessage ? ' (' + attribute.validationMessage + ')' : ''));
+      console.log('? StateChange onEvent()');
+      switch (attribute.type) {
+        case 'Boolean':
+          if (attribute.value != input.checked)
+            $(input).click();
+          break;
+        case 'Date':
+          input.value = attribute.value ? '' + (1 + attribute.value.getMonth()) + '/' + attribute.value.getDate() + '/' + attribute.value.getFullYear() : '';
+          break;
+        case 'Number':
+          input.value = attribute.value ? attribute.value : 0;
+          break;
+        default: // String
+          input.value = attribute.value ? '' + attribute.value : '';
+          break;
       }
+      renderHelpText(attribute._validationDone ? attribute.validationMessage : '');
+      attribute._validationDone = false;
     });
     panel.attributeListeners.push(attribute); // so we can avoid leakage on deleting panel
 
@@ -3287,7 +3341,6 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
       }
     }
   }
-
   /**
    * function to render List
    */
@@ -3333,13 +3386,13 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
     panel.panelForm.appendChild(txtDiv);
 
   }
-
   /**
    * function to render Command
    */
   function renderCommand(command) {
 
     if (!panel.buttonDiv) {
+      console.log('makin copies');
       var formGroup = addEle(panel.panelForm, 'div', 'form-group');
       //panel.buttonDiv = addEle(formGroup, 'div', 'col-sm-offset-3 col-sm-9'); // after form
       panel.buttonDiv = addEle(formGroup, 'div', 'col-sm-9');
