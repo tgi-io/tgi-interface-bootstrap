@@ -10,7 +10,7 @@ var root = this;
 var TGI = {
   CORE: function () {
     return {
-      version: '0.3.10',
+      version: '0.4.3',
       Application: Application,
       Attribute: Attribute,
       Command: Command,
@@ -52,7 +52,7 @@ var TGI = {
 /**
  * Constructor
  */
- function Attribute(args, arg2) {
+function Attribute(args, arg2) {
   var splitTypes; // For String(30) type
   if (false === (this instanceof Attribute)) throw new Error('new operator required');
   if (typeof args == 'string') {
@@ -182,6 +182,9 @@ Attribute.prototype.onEvent = function (events, callback) {
   this._eventListeners.push({events: events, callback: callback});
   return this;
 };
+Attribute.prototype.offEvent = function () {
+  this._eventListeners = [];
+};
 Attribute.prototype._emitEvent = function (event) {
   var i;
   for (i in this._eventListeners) {
@@ -192,6 +195,14 @@ Attribute.prototype._emitEvent = function (event) {
       }
     }
   }
+};
+Attribute.prototype.get = function () {
+  return this.value;
+};
+Attribute.prototype.set = function (newValue) {
+  this.value = newValue;
+  this._emitEvent('StateChange');
+  return this.value;
 };
 Attribute.prototype.coerce = function (value) {
   var newValue = value;
@@ -514,7 +525,7 @@ Command.prototype.execute = function (context) {
         context.render(this, 'View');
         break;
       case 'Presentation':
-        context.render(this.contents, this.presentationMode);
+        context.render(this);
         break;
     }
   } catch (e) {
@@ -801,11 +812,10 @@ Interface.prototype.dispatch = function (request, response) {
 Interface.prototype.notify = function (message) {
   if (false === (message instanceof Message)) throw new Error('Message required');
 };
-Interface.prototype.render = function (presentation, presentationMode, callback) {
-  if (false === (presentation instanceof Presentation)) throw new Error('Presentation object required');
-  if (typeof presentationMode !== 'string') throw new Error('presentationMode required');
-  if (!contains(Command.getPresentationModes(), presentationMode)) throw new Error('Invalid presentationMode: ' + presentationMode);
-  if (callback && typeof callback != 'function') throw new Error('optional second argument must a commandRequest callback function');
+Interface.prototype.render = function (command, callback) {
+  if (false === (command instanceof Command)) throw new Error('Command object required');
+  //if (!contains(Command.getPresentationModes(), presentationMode)) throw new Error('Invalid presentationMode: ' + presentationMode);
+  //if (callback && typeof callback != 'function') throw new Error('optional second argument must a commandRequest callback function');
 };
 Interface.prototype.info = function (text) {
   if (!text || typeof text !== 'string') throw new Error('text required');
@@ -893,7 +903,7 @@ List.prototype.get = function (attribute) {
       return this._items[this._itemIndex][i];
   }
 };
-List.prototype.set = function (attribute,value) {
+List.prototype.set = function (attribute, value) {
   if (this._items.length < 1) throw new Error('list is empty');
   for (var i = 0; i < this.model.attributes.length; i++) {
     if (this.model.attributes[i].name.toUpperCase() == attribute.toUpperCase()) {
@@ -919,10 +929,19 @@ List.prototype.addItem = function (item) {
   this._itemIndex = this._items.length - 1;
   return this;
 };
-List.prototype.removeItem = function (item) {
+List.prototype.removeItem = function () {
   this._items.splice(this._itemIndex, 1);
   this._itemIndex--;
   return this;
+};
+List.prototype.findItemByID = function (id) {
+  var gotMore = this.moveFirst();
+  while (gotMore) {
+    if (id == this._items[this._itemIndex][0])
+      return true;
+    gotMore = this.moveNext();
+  }
+  return false;
 };
 List.prototype.indexedItem = function (index) {
   if (this._items.length < 1) return false;
@@ -1033,7 +1052,7 @@ Model.prototype.getObjectStateErrors = function () {
 Model.prototype.get = function (attribute) {
   for (var i = 0; i < this.attributes.length; i++) {
     if (this.attributes[i].name.toUpperCase() == attribute.toUpperCase())
-      return this.attributes[i].value;
+      return this.attributes[i].get();
   }
 };
 Model.prototype.getAttributeType = function (attribute) {
@@ -1045,7 +1064,8 @@ Model.prototype.getAttributeType = function (attribute) {
 Model.prototype.set = function (attribute, value) {
   for (var i = 0; i < this.attributes.length; i++) {
     if (this.attributes[i].name.toUpperCase() == attribute.toUpperCase()) {
-      this.attributes[i].value = value;
+      this.attributes[i].set(value);
+      this._emitEvent('StateChange');
       return;
     }
   }
@@ -2097,6 +2117,7 @@ Presentation.prototype.getObjectStateErrors = function (modelCheckOnly) {
   this.validationMessage = this.validationErrors.length > 0 ? this.validationErrors[0] : '';
   return this.validationErrors;
 };
+
 Presentation.prototype.validate = function (callback) {
   var presentation = this;
   if (typeof callback != 'function') throw new Error('callback is required');
@@ -2132,7 +2153,7 @@ Presentation.prototype.validate = function (callback) {
     // this is the attribute TODO this bad usage ?
     if (this.validationMessage) // jshint ignore:line
       gotError = true;
-    if (checkCount==checkCount) {
+    if (attributeCount==checkCount) {
       if (gotError)
         presentation.validationErrors.push('contents has validation errors');
       presentation.validationMessage = presentation.validationErrors.length > 0 ? presentation.validationErrors[0] : '';
@@ -2701,7 +2722,7 @@ BootstrapInterface.prototype.dispatch = function (request, response) {
         this.activatePanel(request.command);
         requestHandled = true;
       } else {
-        requestHandled = !this.application.dispatch(request);
+        requestHandled = this.application.dispatch(request);
       }
     }
     if (!requestHandled && this.startcallback) {
@@ -2713,6 +2734,11 @@ BootstrapInterface.prototype.dispatch = function (request, response) {
     }
   }
 };
+BootstrapInterface.prototype.render = function (command, callback) {
+  if (false === (command instanceof Command)) throw new Error('Command object required');
+  this.activatePanel(command);
+};
+
 /**
  * DOM helper
  */
@@ -2905,7 +2931,8 @@ BootstrapInterface.prototype.activatePanel = function (command) {
   if (typeof panel == 'undefined') {
     panel = {
       name: name,
-      listeners: []
+      listeners: [],
+      attributeListeners: []
     };
     this.panels.push(panel);
 
@@ -2917,6 +2944,9 @@ BootstrapInterface.prototype.activatePanel = function (command) {
     panel.panelTitle = addEle(panel.panelHeading, 'div', 'panel-title');
     panel.panelTitleText = addEle(panel.panelTitle, 'a', 'panel-title-text', {href: '#'});
     panel.panelTitleText.innerHTML = title;
+    panel.panelBody = addEle(panel.panelDiv, 'div', 'panel-body bg-' + theme);
+    panel.panelWell = addEle(panel.panelBody, 'div', 'well-panel');
+    panel.panelForm = addEle(panel.panelWell, 'form', 'form-horizontal');
 
     /**
      * Close Panel Button
@@ -2924,15 +2954,10 @@ BootstrapInterface.prototype.activatePanel = function (command) {
     panel.panelClose = addEle(panel.panelTitle, 'a', undefined, {href: '#'});
     panel.panelClose.innerHTML = '<span class="glyphicon glyphicon-remove panel-glyph-right pull-right text-muted"></span>';
     $(panel.panelClose).click(function (e) {
-      $(panel.panelClose).off(); // kill listener
-      for (var i = 0; i < bootstrapInterface.panels.length; i++) {
-        if (panel == bootstrapInterface.panels[i])
-          bootstrapInterface.panels.splice(i, 1);
-      }
-      bootstrapInterface.doc.panelRow.removeChild(panel.panelDiv);
-      panel = undefined; // delete dom refs
+      bootstrapInterface.destroyPanel(panel);
       e.preventDefault();
     });
+    panel.listeners.push(panel.panelClose); // so we can avoid leakage on deleting panel
 
     /**
      * Hide Panel Button
@@ -2945,6 +2970,7 @@ BootstrapInterface.prototype.activatePanel = function (command) {
       $(panel.panelShow).show();
       e.preventDefault();
     });
+    panel.listeners.push(panel.panelHide);
 
     /**
      * Show Panel Button
@@ -2958,21 +2984,9 @@ BootstrapInterface.prototype.activatePanel = function (command) {
       $(panel.panelShow).hide();
       e.preventDefault();
     });
-
-    panel.panelBody = addEle(panel.panelDiv, 'div', 'panel-body bg-' + theme);
-    panel.panelWell = addEle(panel.panelBody, 'div', 'well-panel');
-    panel.panelForm = addEle(panel.panelWell, 'form', 'form-horizontal');
+    panel.listeners.push(panel.panelShow);
 
   }
-
-  /**
-   * Remove listeners before deleting -- todo WTF ?
-   */
-  for (i = 0; i < panel.listeners.length; i++) {
-    var ele = panel.listeners[i];
-    $(ele).off();
-  }
-  panel.buttonDiv = undefined; // WTF ends HERE!!!!!!!!!!!
 
   /**
    * Render panel body based on presentation mode
@@ -2993,6 +3007,44 @@ BootstrapInterface.prototype.activatePanel = function (command) {
 };
 
 /**
+ * When deleting panel remove references to avoid leakage
+ */
+BootstrapInterface.prototype.destroyPanel = function (panel) {
+  var bootstrapInterface = this;
+  var i, ele;
+  /**
+   * Remove this panel from global panel list
+   */
+  for (i = 0; i < bootstrapInterface.panels.length; i++) {
+    if (panel == bootstrapInterface.panels[i])
+      bootstrapInterface.panels.splice(i, 1);
+  }
+  /**
+   * Remove listeners before deleting
+   */
+  for (i = 0; i < panel.listeners.length; i++) {
+    ele = panel.listeners[i];
+    $(ele).off();
+  }
+  for (i = 0; i < panel.attributeListeners.length; i++) {
+    ele = panel.attributeListeners[i];
+    ele.offEvent();
+  }
+
+
+  /**
+   * Causes memory leaking when doing soak test
+   */
+  $('html, body').stop();
+
+  /**
+   * Remove panel from
+   */
+  $(panel.panelDiv).remove();
+
+};
+
+/**
  * renderPanelBodyView will insert the html into the body of the panel for View presentation mode
  */
 BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
@@ -3000,7 +3052,8 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
   var addEle = BootstrapInterface.addEle;
   var i, j;
   var contents = command.contents.get('contents');
-  panel.panelForm.innerHTML = '';
+  //panel.panelForm.innerHTML = '';
+  $(panel.panelForm).empty();
   for (i = 0; i < contents.length; i++) {
     // String markdown or separator '-'
     if (typeof contents[i] == 'string') {
@@ -3013,7 +3066,7 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
       }
     }
     if (contents[i] instanceof Attribute) renderAttribute(contents[i]);
-    if (contents[i] instanceof List) renderList(contents[i],command.theme);
+    if (contents[i] instanceof List) renderList(contents[i], command.theme);
     if (contents[i] instanceof Command) renderCommand(contents[i]);
   }
   /**
@@ -3039,7 +3092,7 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
     var initSwitchery;
     var items;
     var j;
-
+    var validating;
 
     /**
      * Create formGroup container and label
@@ -3074,9 +3127,11 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
         input.setAttribute("type", "checkbox");
         if (attribute.value)
           input.setAttribute("checked", "true");
+
         initSwitchery = new Switchery(input, // todo events inside switchery may cause leakage when panels closed
           {
-            color: window.getComputedStyle(panel.panelTitle, null).getPropertyValue('color'),
+            //color: window.getComputedStyle(panel.panelTitle, null).getPropertyValue('color'),
+            color: '#5bc0de', // todo based on panel theme
             secondaryColor: '#dfdfdf',
             className: 'switchery',
             disabled: false,
@@ -3087,15 +3142,14 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
 
       case 'Date':
         inputGroupDiv = addEle(inputDiv, 'div', 'input-group date');
-
         input = addEle(inputGroupDiv, 'input', 'form-control');
         if (attribute.placeHolder)
           input.setAttribute("placeHolder", attribute.placeHolder);
-        input.setAttribute("type", "Date");
-        input.setAttribute("maxlength", attribute.size);
+        //input.setAttribute("type", "Date");
+        //input.setAttribute("maxlength", attribute.size);
         if (attribute.value)
           input.value = (1 + attribute.value.getMonth()) + '/' + attribute.value.getDate() + '/' + attribute.value.getFullYear();
-
+        // bootstrap-datepicker sucks balls
         inputGroupSpan = addEle(inputGroupDiv, 'span', 'input-group-addon');
         inputGroupSpan.innerHTML = '<i class="fa fa-calendar"></i>';
         $(inputGroupDiv).datepicker({autoclose: true, todayBtn: true, todayHighlight: true, showOnFocus: false});
@@ -3108,8 +3162,7 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
           input.setAttribute("placeHolder", attribute.placeHolder);
         input.setAttribute("type", "number");
         input.setAttribute("maxlength", attribute.size);
-        if (attribute.value)
-          input.setAttribute("value", attribute.value);
+        input.setAttribute("value", attribute.value ? attribute.value : 0);
         break;
 
       default: // String
@@ -3126,21 +3179,16 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
         if (attribute.value)
           input.setAttribute("value", attribute.value);
         if (attribute.quickPick) {
-
           inputGroupSpan = addEle(inputGroupDiv, 'span', 'input-group-btn');
-
           inputGroupButton = addEle(inputGroupSpan, 'button', 'btn btn-default dropdown-toggle');
           inputGroupButton.type = 'button';
           inputGroupButton.setAttribute('data-toggle', 'dropdown');
           inputGroupButton.innerHTML = '<span class="caret"></span>';
-
-
           daItems = attribute.quickPick;
           daList = '';
           for (j = 0; j < daItems.length; j++) {
             daList += '<li><a href="#">' + daItems[j] + '</a></li>';
           }
-
           inputGroupDropDownMenu = addEle(inputGroupSpan, 'ul', 'dropdown-menu pull-right');
           inputGroupDropDownMenu.innerHTML = daList;
           $(inputGroupDropDownMenu).click(function (e) {
@@ -3150,17 +3198,104 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
           panel.listeners.push(inputGroupDropDownMenu); // so we can avoid leakage on deleting panel
         }
     }
+
+    /**
+     * When focus lost on attribute - validate it
+     */
+    $(input).on('focusout', function (event) {
+      switch (attribute.type) {
+        case 'Date':
+          attribute.value = (input.value === '') ? null : attribute.coerce(input.value);
+          if (attribute.value != null) {
+            var mm = attribute.value.getMonth() + 1;
+            var dd = attribute.value.getDate();
+            var yyyy = attribute.value.getFullYear();
+            if (mm < 10) mm = '0' + mm;
+            if (dd < 10) dd = '0' + dd;
+            input.value = mm + '/' + dd + '/' + yyyy;
+          } else {
+            input.value = '';
+          }
+          break;
+        default:
+          attribute.value = (input.value === '') ? null : attribute.coerce(input.value);
+          if (attribute.value != null)
+            input.value = attribute.value;
+          break;
+      }
+      validating = true;
+      attribute.validate(function () {
+        validating = false;
+        renderHelpText(attribute.validationMessage);
+        console.log('attribute.validate ' + attribute.name + ': ' + attribute.value + (attribute.validationMessage ? ' (' + attribute.validationMessage + ')' : ''));
+      });
+    });
+    panel.listeners.push(input); // so we can avoid leakage on deleting panel
+    /**
+     * Monitor state changes to attribute
+     */
+    attribute.onEvent('StateChange', function () {
+      if (!validating) {
+        switch (attribute.type) {
+          case 'Boolean':
+            console.log('fuck ' + attribute.value);
+            if (attribute.value)
+              input.setAttribute("checked", "true");
+            else
+              input.removeAttribute("checked");
+            break;
+          case 'Date':
+            input.value = attribute.value ? '' + (1 + attribute.value.getMonth()) + '/' + attribute.value.getDate() + '/' + attribute.value.getFullYear() : '';
+            break;
+          case 'Number':
+            input.setAttribute("value", attribute.value ? attribute.value : 0);
+            break;
+          default: // String
+            input.value = attribute.value ? '' + attribute.value : '';
+            break;
+        }
+        renderHelpText(attribute.validationMessage);
+        console.log('StateChange ' + attribute.name + ': ' + attribute.value + (attribute.validationMessage ? ' (' + attribute.validationMessage + ')' : ''));
+      }
+    });
+    panel.attributeListeners.push(attribute); // so we can avoid leakage on deleting panel
+
+    /**
+     * For attribute error display
+     */
+    function renderHelpText(text) {
+      if (text) {
+        if (!helpTextDiv) {
+          helpTextDiv = document.createElement("div");
+          helpTextDiv.className = 'col-sm-9 col-sm-offset-3 has-error';
+          formGroup.appendChild(helpTextDiv);
+        }
+        helpTextDiv.innerHTML = '<span style="display: block;" class="help-block">' + text + '</span>';
+        $(formGroup).addClass('has-error');
+        if (inputGroupButton)
+          $(inputGroupButton).addClass('btn-danger');
+      } else {
+        setTimeout(function () {
+          if (helpTextDiv) {
+            $(helpTextDiv).remove();
+            helpTextDiv = null;
+          }
+        }, 250);
+        $(formGroup).removeClass('has-error');
+        if (inputGroupButton)
+          $(inputGroupButton).removeClass('btn-danger');
+      }
+    }
   }
 
   /**
    * function to render List
    */
-
-  function renderList(list,theme) {
+  function renderList(list, theme) {
 
 
     var txtDiv = document.createElement("table");
-    txtDiv.className = 'table table-condensed table-bordered table-hover-'+theme;
+    txtDiv.className = 'table table-condensed table-bordered table-hover-' + theme;
     //bootstrapInterface.info(txtDiv.className);
 
     /**
@@ -3198,7 +3333,6 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
     panel.panelForm.appendChild(txtDiv);
 
   }
-
 
   /**
    * function to render Command

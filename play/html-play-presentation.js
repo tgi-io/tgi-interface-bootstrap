@@ -10,7 +10,7 @@ app.set('brand', 'Presentation');
 app.setPresentation(nav);
 
 var i;
-var themes =['default', 'primary', 'success', 'info', 'warning', 'danger'];
+var themes = ['default', 'primary', 'success', 'info', 'warning', 'danger'];
 
 
 /**
@@ -66,12 +66,12 @@ var infoCommand = new tgi.Command({
  */
 var commandPresentation = new tgi.Presentation();
 commandPresentation.set('contents', [
-  '#Command',
+  '# Command',
   'Including `Command` objects in presentation contents will render as buttons.',
   defaultCommand,
   infoCommand,
   beerCommand,
-  '###Note',
+  '### Note',
   'Commands are all grouped and rendered at bottom of panel',
   new tgi.Command()
 
@@ -88,23 +88,59 @@ var commandCommand = new tgi.Command({
  * Attribute Presentation
  */
 var attributePresentation = new tgi.Presentation();
+var drinks = ['Water', 'Coke', 'Coffee'];
+
+var firstName = new tgi.Attribute({name: 'firstName', label: 'First Name', type: 'String(20)', value: 'John'});
+var lastName = new tgi.Attribute({name: 'lastName', label: 'Last Name', type: 'String(25)', value: 'Doe'});
+var birthday=new tgi.Attribute({name: 'birthDate', label: 'Birth Date', type: 'Date', value: new Date()});
+var drink = new tgi.Attribute({name: 'drink', type: 'String(25)', quickPick: drinks, validationRule: {isOneOf: drinks}});
+var sex = new tgi.Attribute({name: 'sex', type: 'Boolean', value: true});
+var drugs = new tgi.Attribute({name: 'drugs', type: 'Boolean', value: false});
+var iq = new tgi.Attribute({name: 'IQ', type: 'Number', value: 1, validationRule: {range: [90, 160]}});
+
 attributePresentation.set('contents', [
   'Enter some stuff',
   '-',
-  new tgi.Attribute({name: 'login', label: 'Login', type: 'String(20)', hint: {required: true}, value: ''}),
+  new tgi.Attribute({name: 'login', label: 'Login', type: 'String(20)', validationRule: {required: true}, value: ''}),
   new tgi.Attribute({name: 'password', label: 'Password', type: 'String(20)', hint: {password: true}, value: ''}),
   '-',
-  new tgi.Attribute({name: 'firstName', label: 'First Name', type: 'String(20)', value: 'John'}),
-  new tgi.Attribute({name: 'lastName', label: 'Last Name', type: 'String(25)', value: 'Doe'}),
+  firstName,
+  lastName,
   new tgi.Attribute({name: 'address', label: 'Address', type: 'String(50)'}),
   new tgi.Attribute({name: 'city', label: 'City', type: 'String(35)'}),
   new tgi.Attribute({name: 'state', label: 'State', type: 'String(2)'}),
   new tgi.Attribute({name: 'zip', label: 'Zip Code', type: 'String(10)', placeHolder: '#####-####'}),
-  new tgi.Attribute({name: 'birthDate', label: 'Birth Date', type: 'Date', value: new Date()}),
-  new tgi.Attribute({name: 'drink', type: 'String(25)', quickPick: ['Water', 'Coke', 'Coffee']}),
-  new tgi.Attribute({name: 'sex', type: 'Boolean', value: true}),
-  new tgi.Attribute({name: 'drugs', type: 'Boolean', value: false}),
-  new tgi.Attribute({name: 'IQ', type: 'Number', value: 100})
+  birthday,
+  drink,
+  sex,
+  drugs,
+  iq,
+  '-',
+  new tgi.Command({
+    name: 'validate',
+    type: 'Function', contents: function () {
+      attributePresentation.validate(function () {
+        if (attributePresentation.validationMessage) {
+          app.info('Please correct: ' + attributePresentation.validationMessage);
+        } else {
+          app.info('Good Job!!!');
+        }
+      });
+    }
+  }),
+  new tgi.Command({
+    name: 'set GW',
+    type: 'Function', contents: function () {
+      console.log('poop');
+      firstName.set('George');
+      lastName.set('Washington');
+      birthday.set(birthday.coerce('2/22/1732'));
+      iq.set(100);
+      sex.set(false);
+      drugs.set(true);
+    }
+  })
+
 ]);
 var attributeCommand = new tgi.Command({
   name: 'Attribute',
@@ -169,7 +205,7 @@ listPresentation.set('contents', ['Lists\n---', actors, defaultCommand,
   beerCommand
 ]);
 
-var listCommandContents = ['Select Theme','-'];
+var listCommandContents = ['Select Theme', '-'];
 for (i = 0; i < themes.length; i++) {
   var theme = themes[i];
   listCommandContents.push(new tgi.Command({
@@ -188,6 +224,76 @@ var listCommand = new tgi.Command({
   contents: listCommandContents
 });
 
+var loginPresentation = new tgi.Presentation();
+var storePicks = ['HostStore', 'MemoryStore', 'LocalStore'];
+var login = new tgi.Attribute({
+  name: 'login',
+  label: 'Login',
+  type: 'String(20)',
+  validationRule: {required: true},
+  value: ''
+});
+loginPresentation.set('contents', [
+  'Please login to see the fun stuff.',
+  '-',
+  login,
+  new tgi.Attribute({name: 'password', label: 'Password', type: 'String(20)', hint: {password: true}, value: ''}),
+  new tgi.Attribute({name: 'store', label: 'Store', type: 'String(20)', quickPick: storePicks, value: storePicks[0]}),
+  '-',
+  new tgi.Command({
+    name: 'Login', type: 'Function', theme: 'info', icon: 'fa-sign-in', contents: function () {
+      console.log('bing');
+      loginPresentation.validate(function () {
+        if (loginPresentation.validationMessage) {
+          app.info('Please correct: ' + login.validationErrors[0]);
+        } else {
+          app.info('no error');
+          // $("#panel1").show(); // todo don't hard code ?
+          // app.setAppPresentation(privateMenu);
+        }
+      });
+    }
+  })
+]);
+var loginCommand = new tgi.Command({
+  name: 'login',
+  type: 'Presentation',
+  //theme: 'info',
+  icon: 'fa-sign-in',
+  contents: loginPresentation
+});
+
+/**
+ * DOM leakage testing
+ */
+
+
+var globalShit = {};
+
+var commandDefaultList = new tgi.Command({
+  name: 'commandDefaultList',
+  type: 'Presentation',
+  icon: 'fa-table',
+  contents: listPresentation
+});
+
+var domTestCommand = new tgi.Command({
+  name: 'dom test',
+  type: 'Function',
+  contents: function () {
+    var iterations = 10000;
+    app.info('Running ' + iterations + ' iterations.');
+    console.log('shitty balls');
+    setTimeout(function () {
+      for (var j = 0; j < iterations; j++) {
+        commandDefaultList.execute(bs);
+        bs.destroyPanel(bs.panels[bs.panels.length - 1]);
+      }
+      app.info('Tests done - Compare heap snapshots now.');
+    }, 250);
+  }
+});
+
 /**
  * Navigation
  */
@@ -197,7 +303,10 @@ nav.set('contents', [
   beerCommand,
   commandCommand,
   attributeCommand,
-  listCommand
+  listCommand,
+  domTestCommand,
+  '-',
+  loginCommand
 ]);
 
 /**
@@ -206,9 +315,4 @@ nav.set('contents', [
 app.start(function (request) {
   app.info('app got ' + request);
 });
-//bs.activatePanel(listCommandContents[2]);
-//bs.activatePanel(listCommandContents[3]);
-//bs.activatePanel(listCommandContents[4]);
-//bs.activatePanel(listCommandContents[5]);
-//bs.activatePanel(listCommandContents[6]);
-//bs.activatePanel(listCommandContents[7]);
+attributeCommand.execute(bs);
