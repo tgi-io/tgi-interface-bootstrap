@@ -2989,7 +2989,8 @@ BootstrapInterface.prototype.activatePanel = function (command) {
     panel = {
       name: name,
       listeners: [],
-      attributeListeners: []
+      attributeListeners: [],
+      textListeners: [],
     };
     this.panels.push(panel);
 
@@ -3087,7 +3088,10 @@ BootstrapInterface.prototype.destroyPanel = function (panel) {
     ele = panel.attributeListeners[i];
     ele.offEvent();
   }
-
+  for (i = 0; i < panel.textListeners.length; i++) {
+    ele = panel.textListeners[i];
+    ele.offEvent();
+  }
 
   /**
    * Causes memory leaking when doing soak test
@@ -3107,24 +3111,42 @@ BootstrapInterface.prototype.destroyPanel = function (panel) {
 BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
   var bootstrapInterface = this;
   var addEle = BootstrapInterface.addEle;
-  var i, j;
+  var i, j, indent = false, txtDiv;
   var contents = command.contents.get('contents');
-  panel.buttonDiv=null;
+  panel.buttonDiv = null;
   $(panel.panelForm).empty();
   for (i = 0; i < contents.length; i++) {
     if (typeof contents[i] == 'string') {
       if (contents[i] == '-') {
         panel.panelForm.appendChild(document.createElement("hr"));
+      } else if (contents[i] == '>') {
+        indent = true;
+      } else if (contents[i] == '<') {
+        indent = false;
       } else {
-        var txtDiv = document.createElement("div");
+        txtDiv = addEle(panel.panelForm, 'div', indent ? 'col-sm-offset-3' : '');
+        //txtDiv = document.createElement("div");
         txtDiv.innerHTML = marked(contents[i]);
-        panel.panelForm.appendChild(txtDiv);
+        //panel.panelForm.appendChild(txtDiv);
       }
     }
+    if (contents[i] instanceof Text) renderText(contents[i]);
     if (contents[i] instanceof Attribute) renderAttribute(contents[i]);
     if (contents[i] instanceof List) renderList(contents[i], command.theme);
     if (contents[i] instanceof Command) renderCommand(contents[i]);
   }
+  /**
+   * function to render Attribute
+   */
+  function renderText(text) {
+    var textDiv = addEle(panel.panelForm, 'div', indent ? 'col-sm-offset-3' : '');
+    textDiv.innerHTML = marked(text.get());
+    text.onEvent('StateChange', function () {
+      textDiv.innerHTML = marked(text.get());
+    });
+    panel.textListeners.push(text); // so we can avoid leakage on deleting panel
+  }
+
   /**
    * function to render Attribute
    */
@@ -3184,16 +3206,19 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
         if (attribute.value)
           input.setAttribute("checked", "true");
 
-        initSwitchery = new Switchery(input, // todo events inside switchery may cause leakage when panels closed
-          {
-            //color: window.getComputedStyle(panel.panelTitle, null).getPropertyValue('color'),
-            color: '#5bc0de', // todo based on panel theme
-            secondaryColor: '#dfdfdf',
-            className: 'switchery',
-            disabled: false,
-            disabledOpacity: 0.5,
-            speed: '0.1s'
-          });
+        initSwitchery = new Switchery(input, {
+          //color: window.getComputedStyle(panel.panelTitle, null).getPropertyValue('color'),
+          color: '#5bc0de', // todo based on panel theme
+          secondaryColor: '#dfdfdf',
+          className: 'switchery',
+          disabled: false,
+          disabledOpacity: 0.5,
+          speed: '0.1s'
+        });
+        $(input).on('change', function () {
+          console.log('click ' + input.checked);
+          attribute.value = input.checked;
+        });
         break;
 
       case 'Date':
@@ -3201,14 +3226,15 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
         input = addEle(inputGroupDiv, 'input', 'form-control');
         if (attribute.placeHolder)
           input.setAttribute("placeHolder", attribute.placeHolder);
-        //input.setAttribute("type", "Date");
-        //input.setAttribute("maxlength", attribute.size);
         if (attribute.value)
           input.value = (1 + attribute.value.getMonth()) + '/' + attribute.value.getDate() + '/' + attribute.value.getFullYear();
-        // bootstrap-datepicker sucks balls
         inputGroupSpan = addEle(inputGroupDiv, 'span', 'input-group-addon');
         inputGroupSpan.innerHTML = '<i class="fa fa-calendar"></i>';
-        $(inputGroupDiv).datepicker({autoclose: true, todayBtn: true, todayHighlight: true, showOnFocus: false});
+        $(inputGroupDiv).datepicker({autoclose: true, todayBtn: true, todayHighlight: true, showOnFocus: false}).on('hide', function (e) {
+          validateInput();
+          e.preventDefault();
+          //console.log('date hide');
+        });
         panel.listeners.push(inputGroupDiv); // so we can avoid leakage on deleting panel
         break;
 
@@ -3289,11 +3315,9 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
      * Monitor state changes to attribute
      */
     attribute.onEvent('Validate', function () {
-      console.log('* Validate onEvent() ' + attribute.validationMessage);
       attribute._validationDone = true;
     });
     attribute.onEvent('StateChange', function () {
-      console.log('? StateChange onEvent()');
       switch (attribute.type) {
         case 'Boolean':
           if (attribute.value != input.checked)
@@ -3341,6 +3365,7 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
       }
     }
   }
+
   /**
    * function to render List
    */
@@ -3373,7 +3398,6 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
       $(tBodyRow).click(function (e) {
         // bootstrapInterface.dispatch(new Request({type: 'Command', command: action}));
         bootstrapInterface.info('you picked #' + $(e.currentTarget).data("id"));
-        console.log('fuck ' + $(e.currentTarget).data("id"));
         e.preventDefault();
       });
 
@@ -3386,16 +3410,15 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
     panel.panelForm.appendChild(txtDiv);
 
   }
+
   /**
    * function to render Command
    */
   function renderCommand(command) {
 
     if (!panel.buttonDiv) {
-      console.log('makin copies');
       var formGroup = addEle(panel.panelForm, 'div', 'form-group');
-      //panel.buttonDiv = addEle(formGroup, 'div', 'col-sm-offset-3 col-sm-9'); // after form
-      panel.buttonDiv = addEle(formGroup, 'div', 'col-sm-9');
+      panel.buttonDiv = addEle(formGroup, 'div', indent ? 'col-sm-offset-3 col-sm-9' : 'col-sm-9');
     }
     var cmdTheme = command.theme || 'default';
     var button = addEle(panel.buttonDiv, 'button', 'btn btn-' + cmdTheme + ' btn-presentation', {type: 'button'});

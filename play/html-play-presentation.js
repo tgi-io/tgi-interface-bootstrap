@@ -102,7 +102,7 @@ var drink = new tgi.Attribute({
 var sex = new tgi.Attribute({name: 'sex', type: 'Boolean', value: true});
 var drugs = new tgi.Attribute({name: 'drugs', type: 'Boolean', value: false});
 var iq = new tgi.Attribute({name: 'IQ', type: 'Number', value: 1, validationRule: {range: [90, 160]}});
-var attributeText = new tgi.Text('### ATTRIBUTES\n\n_xxx_ yyy\n\n_xxx_ yyy\n\n*xxx* yyy\n\n');
+var attributeText = new tgi.Text('');
 attributePresentation.set('contents', [
   firstName,
   lastName,
@@ -136,11 +136,18 @@ attributePresentation.set('contents', [
   }),
   new tgi.Command({
     name: 'Show Attributes', type: 'Function', contents: function () {
-      try {
-        attributeText.set('#I just set this text here!')
-      } catch (e) {
-        console.log('error ' + e);
+      var txt = '';
+      function showAttribute(attribute) {
+        txt += ('**' + attribute.name + '** ' + attribute.value + '\n\n');
       }
+      showAttribute(firstName);
+      showAttribute(lastName);
+      showAttribute(birthday);
+      showAttribute(drink);
+      showAttribute(sex);
+      showAttribute(drugs);
+      showAttribute(iq);
+      attributeText.set(txt)
     }
   }),
   attributeText
@@ -236,16 +243,20 @@ var login = new tgi.Attribute({
   validationRule: {required: true},
   value: ''
 });
+
+var storeInfoText = new tgi.Text('### FYI\nInformation about store here.\n\n* Think what **you** will _about_ it.');
+
 loginPresentation.set('contents', [
-  'Please login to see the fun stuff.',
+  '>',
+  'Please login in:',
   '-',
   login,
   new tgi.Attribute({name: 'password', label: 'Password', type: 'String(20)', hint: {password: true}, value: ''}),
   new tgi.Attribute({name: 'store', label: 'Store', type: 'String(20)', quickPick: storePicks, value: storePicks[0]}),
+  storeInfoText,
   '-',
   new tgi.Command({
     name: 'Login', type: 'Function', theme: 'info', icon: 'fa-sign-in', contents: function () {
-      console.log('bing');
       loginPresentation.validate(function () {
         if (loginPresentation.validationMessage) {
           app.info('Please correct: ' + login.validationErrors[0]);
@@ -286,10 +297,9 @@ var domTestCommand = new tgi.Command({
   contents: function () {
     var iterations = 100; // 10000 good for testing
     app.info('Running ' + iterations + ' iterations.');
-    console.log('shitty balls');
     setTimeout(function () {
       for (var j = 0; j < iterations; j++) {
-        commandDefaultList.execute(bs);
+        attributeCommand.execute(bs);
         bs.destroyPanel(bs.panels[bs.panels.length - 1]);
       }
       app.info('Tests done - Compare heap snapshots now.');
@@ -318,4 +328,4 @@ nav.set('contents', [
 app.start(function (request) {
   app.info('app got ' + request);
 });
-commandCommand.execute(bs);
+attributeCommand.execute(bs);
