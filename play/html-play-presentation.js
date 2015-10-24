@@ -93,16 +93,12 @@ var drinks = ['Water', 'Coke', 'Coffee'];
 var firstName = new tgi.Attribute({name: 'firstName', label: 'First Name', type: 'String(20)', value: 'John'});
 var lastName = new tgi.Attribute({name: 'lastName', label: 'Last Name', type: 'String(25)', value: 'Doe'});
 var birthday = new tgi.Attribute({name: 'birthDate', label: 'Birth Date', type: 'Date', value: new Date()});
-var drink = new tgi.Attribute({
-  name: 'drink',
-  type: 'String(25)',
-  quickPick: drinks,
-  validationRule: {isOneOf: drinks}
-});
+var drink = new tgi.Attribute({name: 'drink',type: 'String(25)',quickPick: drinks,validationRule: {isOneOf: drinks}});
 var sex = new tgi.Attribute({name: 'sex', type: 'Boolean', value: true});
 var drugs = new tgi.Attribute({name: 'drugs', type: 'Boolean', value: false});
 var iq = new tgi.Attribute({name: 'IQ', type: 'Number', value: 1, validationRule: {range: [90, 160]}});
 var attributeText = new tgi.Text('');
+var viewEditCommand;
 attributePresentation.set('contents', [
   firstName,
   lastName,
@@ -137,9 +133,11 @@ attributePresentation.set('contents', [
   new tgi.Command({
     name: 'Show Attributes', type: 'Function', contents: function () {
       var txt = '';
+
       function showAttribute(attribute) {
         txt += ('**' + attribute.name + '** ' + attribute.value + '\n\n');
       }
+
       showAttribute(firstName);
       showAttribute(lastName);
       showAttribute(birthday);
@@ -148,6 +146,13 @@ attributePresentation.set('contents', [
       showAttribute(drugs);
       showAttribute(iq);
       attributeText.set(txt)
+    }
+  }),
+  viewEditCommand = new tgi.Command({
+    name: 'Edit', type: 'Function', contents: function () {
+      attributeCommand.presentationMode = viewEditCommand.name;
+      viewEditCommand.name = viewEditCommand.name=='Edit' ? 'View' : 'Edit';
+      attributeCommand.execute(bs);
     }
   }),
   attributeText
