@@ -10,7 +10,7 @@ var root = this;
 var TGI = {
   CORE: function () {
     return {
-      version: '0.4.5',
+      version: '0.4.13',
       Application: Application,
       Attribute: Attribute,
       Command: Command,
@@ -33,6 +33,8 @@ var TGI = {
       Workspace: Workspace,
       inheritPrototype: inheritPrototype,
       getInvalidProperties: getInvalidProperties,
+      getConstructorFromModelType: getConstructorFromModelType,
+      createModelFromModelType: createModelFromModelType,
       trim: trim,
       ltrim: ltrim,
       rtrim: rtrim,
@@ -612,6 +614,9 @@ Command.prototype.execute = function (context) {
       case 'Error':
         self._emitEvent('Error', obj);
         break;
+      case 'Aborted':
+        self.abort();
+        break;
       case 'Completed':
         for (var t in tasks) {
           if (tasks.hasOwnProperty(t)) {
@@ -821,6 +826,15 @@ Interface.prototype.render = function (command, callback) {
 Interface.prototype.info = function (text) {
   if (!text || typeof text !== 'string') throw new Error('text required');
 };
+Interface.prototype.done = function (text) {
+  if (!text || typeof text !== 'string') throw new Error('text required');
+};
+Interface.prototype.warn = function (text) {
+  if (!text || typeof text !== 'string') throw new Error('text required');
+};
+Interface.prototype.err = function (text) {
+  if (!text || typeof text !== 'string') throw new Error('text required');
+};
 Interface.prototype.ok = function (prompt, callback) {
   if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
   if (typeof callback != 'function') throw new Error('callback required');
@@ -1019,7 +1033,10 @@ var Model = function (args) {
   this._eventListeners = [];
   this._errorConditions = {};
 };
-// Methods
+Model._ModelConstructor = {};
+/**
+ * Methods
+ */
 Model.prototype.toString = function () {
   return "a " + this.modelType;
 };
@@ -1487,6 +1504,7 @@ function Transport(location, callback) {
     console.log('socket.io (' + self.location + ') disconnect: ' + reason);
   });
 }
+Transport.showLog=false; // set to true to show message
 /**
  * pub/sub thingies
  */
@@ -1495,6 +1513,8 @@ Transport.setMessageHandler = function (message, handler) {
   Transport.messageHandlers[message] = handler;
 };
 Transport.hostMessageProcess = function (obj, fn) {
+  if (Transport.showLog)
+    console.log('Transport.hostMessageProcess ' + JSON.stringify(obj));
   if (Transport.messageHandlers[obj.type]) {
     Transport.messageHandlers[obj.type](obj.contents, fn);
   } else {
@@ -1523,10 +1543,14 @@ Transport.prototype.send = function (message, callback) {
     return;
   }
   if (typeof callback != 'undefined') {
+    if (Transport.showLog)
+      console.log('Transport emit ' + JSON.stringify(message));
     self.socket.emit('ackmessage', message, function (msg) {
       callback.call(self, msg);
     });
   } else {
+    if (Transport.showLog)
+      console.log('Transport send ' + JSON.stringify(message));
     self.socket.send(message);
   }
 };
@@ -1998,6 +2022,8 @@ var Application = function (args) {
   this.set('brand', 'NEW APP');
 };
 Application.prototype = Object.create(Model.prototype);
+Model._ModelConstructor.Application = Application;
+
 
 /**
  * Methods
@@ -2055,6 +2081,21 @@ Application.prototype.info = function (text) {
   if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
   if (!text || typeof text !== 'string') throw new Error('text parameter required');
   this.primaryInterface.info(text);
+};
+Application.prototype.done = function (text) {
+  if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
+  if (!text || typeof text !== 'string') throw new Error('text parameter required');
+  this.primaryInterface.done(text);
+};
+Application.prototype.warn = function (text) {
+  if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
+  if (!text || typeof text !== 'string') throw new Error('text parameter required');
+  this.primaryInterface.warn(text);
+};
+Application.prototype.err = function (text) {
+  if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
+  if (!text || typeof text !== 'string') throw new Error('text parameter required');
+  this.primaryInterface.err(text);
 };
 Application.prototype.ok = function (prompt, callback) {
   if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
@@ -2124,6 +2165,7 @@ var Log = function (args) {
   this.modelType = "Log";
 };
 Log.prototype = Object.create(Model.prototype);
+Model._ModelConstructor.Log = Log;
 /**
  * Methods
  */
@@ -2151,6 +2193,7 @@ var Presentation = function (args) {
   this.modelType = "Presentation";
 };
 Presentation.prototype = Object.create(Model.prototype);
+Model._ModelConstructor.Presentation = Presentation;
 /*
  * Methods
  */
@@ -2191,32 +2234,43 @@ Presentation.prototype.validate = function (callback) {
   var attributeCount = 0;
   var checkCount = 0;
   var contents = this.get('contents');
-  if (contents instanceof Array) {
-    // Count first
-    for (i = 0; i < contents.length; i++) {
-      if (contents[i] instanceof Attribute) {
-        attributeCount++;
-      }
-    }
-    // Launch validations
-    for (i = 0; i < contents.length; i++) {
-      if (contents[i] instanceof Attribute) {
-        contents[i].validate(checkAttrib);
-      }
+  if (!(contents instanceof Array))
+    contents = [];
+
+  // Count first
+  for (i = 0; i < contents.length; i++) {
+    if (contents[i] instanceof Attribute) {
+      attributeCount++;
     }
   }
+  // Launch validations
+  for (i = 0; i < contents.length; i++) {
+    if (contents[i] instanceof Attribute) {
+      contents[i].validate(checkAttrib);
+    }
+  }
+
+  // If no attributes call callback since checkAttrib not called
+  if (contents.length < 1)
+    finishUp();
+
   function checkAttrib() {
     checkCount++;
     // this is the attribute TODO this bad usage ?
     if (this.validationMessage) // jshint ignore:line
       gotError = true;
-    if (attributeCount==checkCount) {
+    if (attributeCount == checkCount) {
       if (gotError)
         presentation.validationErrors.push('contents has validation errors');
-      presentation.validationMessage = presentation.validationErrors.length > 0 ? presentation.validationErrors[0] : '';
-      callback();
+      finishUp();
     }
   }
+
+  function finishUp() {
+    presentation.validationMessage = presentation.validationErrors.length > 0 ? presentation.validationErrors[0] : '';
+    callback();
+  }
+
 };
 
 /**
@@ -2242,6 +2296,7 @@ var Session = function (args) {
   this.set('active', false);
 };
 Session.prototype = Object.create(Model.prototype);
+Model._ModelConstructor.Session = Session;
 /*
  * Methods
  */
@@ -2346,9 +2401,10 @@ var User = function (args) {
   args.attributes.push(new Attribute({name: 'email', type: 'String(20)'}));
   Model.call(this, args);
   this.modelType = "User";
-  this.set('active',false);
+  this.set('active', false);
 };
 User.prototype = Object.create(Model.prototype);
+Model._ModelConstructor.User = User;
 /**
  * tequila
  * workspace-class
@@ -2370,6 +2426,7 @@ function Workspace(args) {
   this.modelType = "Workspace";
 }
 Workspace.prototype = Object.create(Model.prototype);
+Model._ModelConstructor.Workspace = Workspace;
 /*
  * Methods
  */
@@ -2611,6 +2668,23 @@ var getInvalidProperties = function (args, allowedProperties) {
   return props;
 };
 
+/**
+ * getConstructorFromModelType(modelType)
+ */
+var getConstructorFromModelType = function (modelType) {
+  return Model._ModelConstructor[modelType] || Model;
+};
+
+/**
+ * createModelFromModelType(modelType)
+ */
+var createModelFromModelType = function (modelType) {
+  var ProxyModel = getConstructorFromModelType(modelType);
+  return new ProxyModel();
+};
+
+
+
 /**---------------------------------------------------------------------------------------------------------------------
  * tgi-core/lib/utility/tgi-core-strings.source.js
  */
@@ -2706,7 +2780,7 @@ var cpad = function (expr, length, fillChar) {
 TGI.INTERFACE = TGI.INTERFACE || {};
 TGI.INTERFACE.BOOTSTRAP = function () {
   return {
-    version: '0.0.3',
+    version: '0.1.1',
     BootstrapInterface: BootstrapInterface
   };
 };
@@ -2952,6 +3026,7 @@ BootstrapInterface.prototype.htmlPanels = function () {
  * activatePanel will create if needed, make panel visible and render contents
  */
 BootstrapInterface.prototype.activatePanel = function (command) {
+
   var bootstrapInterface = this;
   var addEle = BootstrapInterface.addEle;
   var addTopEle = BootstrapInterface.addTopEle;
@@ -2983,6 +3058,14 @@ BootstrapInterface.prototype.activatePanel = function (command) {
   }
 
   /**
+   * For now destroy and recreate panel
+   */
+  if (typeof panel != 'undefined') {
+    bootstrapInterface.destroyPanel(panel);
+    panel = undefined;
+  }
+
+  /**
    * If we did not find panel create
    */
   if (typeof panel == 'undefined') {
@@ -2990,7 +3073,7 @@ BootstrapInterface.prototype.activatePanel = function (command) {
       name: name,
       listeners: [],
       attributeListeners: [],
-      textListeners: [],
+      textListeners: []
     };
     this.panels.push(panel);
 
@@ -3047,21 +3130,15 @@ BootstrapInterface.prototype.activatePanel = function (command) {
   }
 
   /**
-   * Render panel body based on presentation mode
+   * Render panel body
    */
-  switch (command.presentationMode) {
-    case 'View': // todo edit/view wacked (says view renders edit ???)
-      bootstrapInterface.renderPanelBodyView(panel, command);
-      $(panel.panelBody).show('fast'); //
-      $(panel.panelHide).show();
-      $(panel.panelShow).hide();
-      $('html, body').animate({
-        scrollTop: $(panel.panelDiv).offset().top - $(bootstrapInterface.doc.navBar).height() - 8
-      }, 250);
-      break;
-    default:
-      bootstrapInterface.info('unknown command.presentationMode: ' + command.presentationMode);
-  }
+  bootstrapInterface.renderPanelBody(panel, command);
+  $(panel.panelBody).show('fast'); //
+  $(panel.panelHide).show();
+  $(panel.panelShow).hide();
+  $('html, body').animate({
+    scrollTop: $(panel.panelDiv).offset().top - $(bootstrapInterface.doc.navBar).height() - 8
+  }, 250);
 };
 
 /**
@@ -3106,9 +3183,9 @@ BootstrapInterface.prototype.destroyPanel = function (panel) {
 };
 
 /**
- * renderPanelBodyView will insert the html into the body of the panel for View presentation mode
+ * renderPanelBody will insert the html into the body of the panel for View presentation mode
  */
-BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
+BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
   var bootstrapInterface = this;
   var addEle = BootstrapInterface.addEle;
   var i, j, indent = false, txtDiv;
@@ -3117,21 +3194,24 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
   $(panel.panelForm).empty();
   for (i = 0; i < contents.length; i++) {
     if (typeof contents[i] == 'string') {
-      if (contents[i] == '-') {
-        panel.panelForm.appendChild(document.createElement("hr"));
-      } else if (contents[i] == '>') {
-        indent = true;
-      } else if (contents[i] == '<') {
-        indent = false;
-      } else {
-        txtDiv = addEle(panel.panelForm, 'div', indent ? 'col-sm-offset-3' : '');
-        //txtDiv = document.createElement("div");
-        txtDiv.innerHTML = marked(contents[i]);
-        //panel.panelForm.appendChild(txtDiv);
+      switch (contents[i]) {
+        case '-':
+          panel.panelForm.appendChild(document.createElement("hr"));
+          break;
+        case '>':
+          indent = true;
+          break;
+        case '<':
+          indent = false;
+          break;
+        default:
+          txtDiv = addEle(panel.panelForm, 'div', indent ? 'col-sm-offset-3' : '');
+          txtDiv.innerHTML = marked(contents[i]);
+          break;
       }
     }
     if (contents[i] instanceof Text) renderText(contents[i]);
-    if (contents[i] instanceof Attribute) renderAttribute(contents[i]);
+    if (contents[i] instanceof Attribute) renderAttribute(contents[i], command.presentationMode);
     if (contents[i] instanceof List) renderList(contents[i], command.theme);
     if (contents[i] instanceof Command) renderCommand(contents[i]);
   }
@@ -3148,9 +3228,9 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
   }
 
   /**
-   * function to render Attribute
+   * function to render Attribute for Edit
    */
-  function renderAttribute(attribute) {
+  function renderAttribute(attribute, mode) {
 
     var daList;
     var daItems;
@@ -3199,8 +3279,29 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
     /**
      * Render based on type
      */
-    switch (attribute.type) {
-      case 'Boolean':
+    switch (mode + attribute.type) {
+
+      case 'ViewBoolean':
+        input = addEle(inputDiv, 'input', 'js-switch');
+        input.setAttribute("type", "checkbox");
+        if (attribute.value)
+          input.setAttribute("checked", "true");
+
+        initSwitchery = new Switchery(input, {
+          //color: window.getComputedStyle(panel.panelTitle, null).getPropertyValue('color'),
+          color: '#5bc0de', // todo based on panel theme
+          secondaryColor: '#dfdfdf',
+          className: 'switchery',
+          disabled: true,
+          disabledOpacity: 0.5,
+          speed: '0.1s'
+        });
+        $(input).on('change', function () {
+          attribute.value = input.checked;
+        });
+        break;
+
+      case 'EditBoolean':
         input = addEle(inputDiv, 'input', 'js-switch');
         input.setAttribute("type", "checkbox");
         if (attribute.value)
@@ -3216,12 +3317,11 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
           speed: '0.1s'
         });
         $(input).on('change', function () {
-          console.log('click ' + input.checked);
           attribute.value = input.checked;
         });
         break;
 
-      case 'Date':
+      case 'EditDate':
         inputGroupDiv = addEle(inputDiv, 'div', 'input-group date');
         input = addEle(inputGroupDiv, 'input', 'form-control');
         if (attribute.placeHolder)
@@ -3230,15 +3330,19 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
           input.value = (1 + attribute.value.getMonth()) + '/' + attribute.value.getDate() + '/' + attribute.value.getFullYear();
         inputGroupSpan = addEle(inputGroupDiv, 'span', 'input-group-addon');
         inputGroupSpan.innerHTML = '<i class="fa fa-calendar"></i>';
-        $(inputGroupDiv).datepicker({autoclose: true, todayBtn: true, todayHighlight: true, showOnFocus: false}).on('hide', function (e) {
+        $(inputGroupDiv).datepicker({
+          autoclose: true,
+          todayBtn: true,
+          todayHighlight: true,
+          showOnFocus: false
+        }).on('hide', function (e) {
           validateInput();
           e.preventDefault();
-          //console.log('date hide');
         });
         panel.listeners.push(inputGroupDiv); // so we can avoid leakage on deleting panel
         break;
 
-      case 'Number':
+      case 'EditNumber':
         input = addEle(inputDiv, 'input', 'form-control');
         if (attribute.placeHolder)
           input.setAttribute("placeHolder", attribute.placeHolder);
@@ -3247,7 +3351,7 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
         input.setAttribute("value", attribute.value ? attribute.value : 0);
         break;
 
-      default: // String
+      case 'EditString':
         if (attribute.quickPick) {
           inputGroupDiv = addEle(inputDiv, 'div', 'input-group');
           input = addEle(inputGroupDiv, 'input', 'form-control');
@@ -3280,6 +3384,19 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
           });
           panel.listeners.push(inputGroupDropDownMenu); // so we can avoid leakage on deleting panel
         }
+        break;
+
+      case 'ViewDate':
+        input = addEle(inputDiv, 'p', 'form-control-static');
+        if (attribute.value)
+          input.innerHTML = (1 + attribute.value.getMonth()) + '/' + attribute.value.getDate() + '/' + attribute.value.getFullYear();
+
+        break;
+
+      default: // View
+        input = addEle(inputDiv, 'p', 'form-control-static');
+        input.innerHTML = attribute.value;
+
     }
 
     /**
@@ -3309,8 +3426,12 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
       attribute.validate(function () {
       });
     };
+    /**
+     * Validate when focus lost
+     */
     $(input).on('focusout', validateInput);
     panel.listeners.push(input); // so we can avoid leakage on deleting panel
+
     /**
      * Monitor state changes to attribute
      */
@@ -3318,19 +3439,25 @@ BootstrapInterface.prototype.renderPanelBodyView = function (panel, command) {
       attribute._validationDone = true;
     });
     attribute.onEvent('StateChange', function () {
-      switch (attribute.type) {
-        case 'Boolean':
+      switch (mode + attribute.type) {
+        case 'EditBoolean':
           if (attribute.value != input.checked)
             $(input).click();
           break;
-        case 'Date':
+        case 'EditDate':
           input.value = attribute.value ? '' + (1 + attribute.value.getMonth()) + '/' + attribute.value.getDate() + '/' + attribute.value.getFullYear() : '';
           break;
-        case 'Number':
+        case 'EditNumber':
           input.value = attribute.value ? attribute.value : 0;
           break;
-        default: // String
+        case 'EditString':
           input.value = attribute.value ? '' + attribute.value : '';
+          break;
+        case 'ViewDate':
+          input.innerHTML = attribute.value ? '' + (1 + attribute.value.getMonth()) + '/' + attribute.value.getDate() + '/' + attribute.value.getFullYear() : '';
+          break;
+        default: // View String
+          input.innerHTML = attribute.value;
           break;
       }
       renderHelpText(attribute._validationDone ? attribute.validationMessage : '');
@@ -3638,78 +3765,265 @@ BootstrapInterface.prototype.htmlDialog = function () {
 };
 
 BootstrapInterface.prototype.info = function (text) {
-  /*
-   var bootstrapInterface = this;
-   if (!text || typeof text !== 'string') throw new Error('text required');
-   var infoClass = ' class="text-center text-info" ';
-   var infoStyle = ' style="margin-top: 0; margin-bottom: 4px;" ';
-   this.doc.navBarAlert.innerHTML = '<h5 ' + infoClass + infoStyle + '>' + text + '</h5>';
-   $(this.doc.navBarAlert).click(function (e) {
-   bootstrapInterface.doc.navBarAlert.innerHTML = '';
-   e.preventDefault();
-   });
-   setTimeout(function () {
-   bootstrapInterface.doc.navBarAlert.innerHTML = '';
-   },3000);
-   */
   var self = this;
-  var notify = $.notify({
-    // options
-    icon: 'glyphicon glyphicon-info-sign',
-    title: 'Information',
-    message: text,
-    url: 'https://github.com/mouse0270/bootstrap-notify',
-    target: '_blank'
-  }, {
-    // settings
-    element: 'body',
-    position: null,
-    type: "info",
-    allow_dismiss: true,
-    newest_on_top: true,
-    placement: {
-      from: "top",
-      align: "right"
+  var notify = $.notify(
+    {
+      /**
+       * options
+       */
+      icon: 'glyphicon glyphicon-info-sign',
+      title: 'Information',
+      message: text,
+      //url: 'https://github.com/mouse0270/bootstrap-notify',
+      //target: '_blank'
     },
-    offset: {
-      x: 20,
-      y: self.doc.navBarHeader.offsetHeight+20
-    },
-    spacing: 10,
-    z_index: 1031,
-    delay: 0,
-    timer: 1000,
-    //url_target: '_blank',
-    mouse_over: null,
-    animate: {
-      enter: 'animated fadeInDown',
-      exit: 'animated fadeOutUp'
-    },
-    onShow: null,
-    onShown: null,
-    onClose: null,
-    onClosed: null,
-    icon_type: 'class',
-    template: '<div data-notify="container" class="col-xs-11 col-sm-6 alert alert-notify alert-{0}" role="alert">' +
-    '<button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>' +
-    '<h4>' +
-    '<span data-notify="icon"></span> ' +
-    '<span data-notify="title">{1}</span>' +
-    '</h4>' +
-    '<span data-notify="message">{2}</span>' +
-    '<div class="progress" data-notify="progressbar">' +
-    '<div class="progress-bar progress-bar-{0}" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>' +
-    '</div>' +
-      //'<a href="{3}" target="{4}" data-notify="url"></a>' +
-    '</div>'
-  });
-
+    {
+      /**
+       * settings
+       */
+      element: 'body',
+      position: null,
+      type: "info",
+      allow_dismiss: true,
+      newest_on_top: true,
+      placement: {
+        from: "top",
+        align: "right"
+      },
+      offset: {
+        x: 20,
+        y: self.doc.navBarHeader.offsetHeight + 20
+      },
+      spacing: 10,
+      z_index: 1031,
+      delay: 0,
+      timer: 1000,
+      //url_target: '_blank',
+      mouse_over: null,
+      animate: {
+        enter: 'animated fadeInDown',
+        exit: 'animated fadeOutUp'
+      },
+      onShow: null,
+      onShown: null,
+      onClose: null,
+      onClosed: null,
+      icon_type: 'class',
+      template: '<div data-notify="container" class="col-xs-11 col-sm-6 alert alert-notify alert-{0}" role="alert">' +
+      '<button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>' +
+      '<h4>' +
+      '<span data-notify="icon"></span> ' +
+      '<span data-notify="title">{1}</span>' +
+      '</h4>' +
+      '<span data-notify="message">{2}</span>' +
+      '<div class="progress" data-notify="progressbar">' +
+      '<div class="progress-bar progress-bar-{0}" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>' +
+      '</div>' +
+        //'<a href="{3}" target="{4}" data-notify="url"></a>' +
+      '</div>'
+    }
+  );
   setTimeout(function () {
     notify.close();
   }, 3000);
-
-
 };
+
+
+BootstrapInterface.prototype.done = function (text) {
+  var self = this;
+  var notify = $.notify(
+    {
+      /**
+       * options
+       */
+      icon: 'glyphicon glyphicon-saved',
+      title: 'Done',
+      message: text
+      //url: 'https://github.com/mouse0270/bootstrap-notify',
+      //target: '_blank'
+    },
+    {
+      /**
+       * settings
+       */
+      element: 'body',
+      position: null,
+      type: "success",
+      allow_dismiss: true,
+      newest_on_top: true,
+      placement: {
+        from: "top",
+        align: "right"
+      },
+      offset: {
+        x: 20,
+        y: self.doc.navBarHeader.offsetHeight + 20
+      },
+      spacing: 10,
+      z_index: 1031,
+      delay: 0,
+      timer: 1000,
+      //url_target: '_blank',
+      mouse_over: null,
+      animate: {
+        enter: 'animated fadeInDown',
+        exit: 'animated fadeOutUp'
+      },
+      onShow: null,
+      onShown: null,
+      onClose: null,
+      onClosed: null,
+      icon_type: 'class',
+      template: '<div data-notify="container" class="col-xs-11 col-sm-6 alert alert-notify alert-{0}" role="alert">' +
+      '<button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>' +
+      '<h4>' +
+      '<span data-notify="icon"></span> ' +
+      '<span data-notify="title">{1}</span>' +
+      '</h4>' +
+      '<span data-notify="message">{2}</span>' +
+      '<div class="progress" data-notify="progressbar">' +
+      '<div class="progress-bar progress-bar-{0}" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>' +
+      '</div>' +
+        //'<a href="{3}" target="{4}" data-notify="url"></a>' +
+      '</div>'
+    }
+  );
+  setTimeout(function () {
+    notify.close();
+  }, 3000);
+};
+
+BootstrapInterface.prototype.warn = function (text) {
+  var self = this;
+  var notify = $.notify(
+    {
+      /**
+       * options
+       */
+      icon: 'glyphicon glyphicon-exclamation-sign',
+      title: 'Warning',
+      message: text,
+      //url: 'https://github.com/mouse0270/bootstrap-notify',
+      //target: '_blank'
+    },
+    {
+      /**
+       * settings
+       */
+      element: 'body',
+      position: null,
+      type: "warning",
+      allow_dismiss: true,
+      newest_on_top: true,
+      placement: {
+        from: "top",
+        align: "right"
+      },
+      offset: {
+        x: 20,
+        y: self.doc.navBarHeader.offsetHeight + 20
+      },
+      spacing: 10,
+      z_index: 1031,
+      delay: 0,
+      timer: 1000,
+      //url_target: '_blank',
+      mouse_over: null,
+      animate: {
+        enter: 'animated fadeInDown',
+        exit: 'animated fadeOutUp'
+      },
+      onShow: null,
+      onShown: null,
+      onClose: null,
+      onClosed: null,
+      icon_type: 'class',
+      template: '<div data-notify="container" class="col-xs-11 col-sm-6 alert alert-notify alert-{0}" role="alert">' +
+      '<button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>' +
+      '<h4>' +
+      '<span data-notify="icon"></span> ' +
+      '<span data-notify="title">{1}</span>' +
+      '</h4>' +
+      '<span data-notify="message">{2}</span>' +
+      '<div class="progress" data-notify="progressbar">' +
+      '<div class="progress-bar progress-bar-{0}" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>' +
+      '</div>' +
+        //'<a href="{3}" target="{4}" data-notify="url"></a>' +
+      '</div>'
+    }
+  );
+  setTimeout(function () {
+    notify.close();
+  }, 3000);
+};
+
+
+BootstrapInterface.prototype.err = function (text) {
+  var self = this;
+  var notify = $.notify(
+    {
+      /**
+       * options
+       */
+      icon: 'glyphicon glyphicon-warning-sign',
+      title: 'Error',
+      message: text,
+      //url: 'https://github.com/mouse0270/bootstrap-notify',
+      //target: '_blank'
+    },
+    {
+      /**
+       * settings
+       */
+      element: 'body',
+      position: null,
+      type: "danger",
+      allow_dismiss: true,
+      newest_on_top: true,
+      placement: {
+        from: "top",
+        align: "right"
+      },
+      offset: {
+        x: 20,
+        y: self.doc.navBarHeader.offsetHeight + 20
+      },
+      spacing: 10,
+      z_index: 1031,
+      delay: 0,
+      timer: 1000,
+      //url_target: '_blank',
+      mouse_over: null,
+      animate: {
+        enter: 'animated fadeInDown',
+        exit: 'animated fadeOutUp'
+      },
+      onShow: null,
+      onShown: null,
+      onClose: null,
+      onClosed: null,
+      icon_type: 'class',
+      template: '<div data-notify="container" class="col-xs-11 col-sm-6 alert alert-notify alert-{0}" role="alert">' +
+      '<button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>' +
+      '<h4>' +
+      '<span data-notify="icon"></span> ' +
+      '<span data-notify="title">{1}</span>' +
+      '</h4>' +
+      '<span data-notify="message">{2}</span>' +
+      '<div class="progress" data-notify="progressbar">' +
+      '<div class="progress-bar progress-bar-{0}" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>' +
+      '</div>' +
+        //'<a href="{3}" target="{4}" data-notify="url"></a>' +
+      '</div>'
+    }
+  );
+  setTimeout(function () {
+    notify.close();
+  }, 3000);
+};
+
+
+
 BootstrapInterface.prototype.ok = function (prompt, callback) {
   if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
   if (typeof callback != 'function') throw new Error('callback required');

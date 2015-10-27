@@ -122,8 +122,17 @@ nav.set('contents', [
   ]}),
   commands,
   userQueryCommand,
-  new tgi.Command({name: 'Info', type: 'Function', theme: 'warning', icon: 'glyphicon-glass', contents: function () {
-    app.info('The current date and time is ' + new Date())
+  new tgi.Command({name: 'Info', type: 'Function', theme: 'info', icon: 'fa-info-circle', contents: function () {
+    app.info('The current date and time is ' + new Date());
+  }}),
+  new tgi.Command({name: 'Done', type: 'Function', theme: 'success', icon: 'fa-check', contents: function () {
+    app.done('Soups Done!');
+  }}),
+  new tgi.Command({name: 'Warning', type: 'Function', theme: 'warning', icon: 'fa-exclamation-circle', contents: function () {
+    app.warn('Do not try this at home.');
+  }}),
+  new tgi.Command({name: 'Error', type: 'Function', theme: 'danger', icon: 'fa-exclamation-triangle', contents: function () {
+    app.err('You broke it now!');
   }}),
   '-',
   new tgi.Command({name: 'Account'})
