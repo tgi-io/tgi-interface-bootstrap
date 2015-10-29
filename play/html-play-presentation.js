@@ -2,10 +2,10 @@
  * tgi-interface-bootstrap/test/html-play.js
  **/
 var tgi = TGI.CORE();
-var bs = new (TGI.INTERFACE.BOOTSTRAP().BootstrapInterface)({vendor: Date}); // no vendor function TODO wtf
-var app = new tgi.Application({interface: bs});
+var ui = new (TGI.INTERFACE.BOOTSTRAP().BootstrapInterface)({vendor: Date}); // no vendor function TODO wtf
+var app = new tgi.Application({interface: ui});
 var nav = new tgi.Presentation();
-app.setInterface(bs);
+app.setInterface(ui);
 app.set('brand', 'Presentation');
 app.setPresentation(nav);
 
@@ -152,7 +152,7 @@ attributePresentation.set('contents', [
     name: 'Edit', type: 'Function', contents: function () {
       attributeCommand.presentationMode = viewEditCommand.name;
       viewEditCommand.name = viewEditCommand.name=='Edit' ? 'View' : 'Edit';
-      attributeCommand.execute(bs);
+      attributeCommand.execute(ui);
     }
   }),
   attributeText
@@ -304,8 +304,8 @@ var domTestCommand = new tgi.Command({
     app.info('Running ' + iterations + ' iterations.');
     setTimeout(function () {
       for (var j = 0; j < iterations; j++) {
-        attributeCommand.execute(bs);
-        bs.destroyPanel(bs.panels[bs.panels.length - 1]);
+        attributeCommand.execute(ui);
+        ui.destroyPanel(ui.panels[ui.panels.length - 1]);
       }
       app.info('Tests done - Compare heap snapshots now.');
     }, 250);
@@ -333,4 +333,4 @@ nav.set('contents', [
 app.start(function (request) {
   app.info('app got ' + request);
 });
-attributeCommand.execute(bs);
+attributeCommand.execute(ui);
