@@ -113,7 +113,7 @@ attributePresentation.set('contents', [
     type: 'Function', contents: function () {
       attributePresentation.validate(function () {
         if (attributePresentation.validationMessage) {
-          app.info('Please correct: ' + attributePresentation.validationMessage);
+          app.warn('Please correct: ' + attributePresentation.validationMessage);
         } else {
           app.info('Good Job!!!');
         }

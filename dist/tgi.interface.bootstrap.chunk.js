@@ -4,7 +4,7 @@
 TGI.INTERFACE = TGI.INTERFACE || {};
 TGI.INTERFACE.BOOTSTRAP = function () {
   return {
-    version: '0.1.1',
+    version: '0.1.3',
     BootstrapInterface: BootstrapInterface
   };
 };
@@ -74,7 +74,7 @@ BootstrapInterface.prototype.dispatch = function (request, response) {
   try {
     if (this.application) {
       if (request.type == 'Command' && request.command.type == 'Presentation') {
-        this.activatePanel(request.command);
+        request.command.execute(this);
         requestHandled = true;
       } else {
         requestHandled = this.application.dispatch(request);
@@ -754,7 +754,11 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
 
       for (j = 1; j < list.model.attributes.length; j++) { // skip id (0))
         var dAttribute = list.model.attributes[j];
-        addEle(tBodyRow, 'td').innerHTML = list.get(dAttribute.name);
+        var dValue = list.get(dAttribute.name);
+        if (dValue.name) // todo instanceof Attribute.ModelID did not work so kludge here
+          addEle(tBodyRow, 'td').innerHTML = dValue.name;
+        else
+          addEle(tBodyRow, 'td').innerHTML = dValue;
       }
       gotData = list.moveNext();
     }
@@ -987,7 +991,6 @@ BootstrapInterface.prototype.htmlDialog = function () {
     }
   });
 };
-
 BootstrapInterface.prototype.info = function (text) {
   var self = this;
   var notify = $.notify(
@@ -1051,8 +1054,6 @@ BootstrapInterface.prototype.info = function (text) {
     notify.close();
   }, 3000);
 };
-
-
 BootstrapInterface.prototype.done = function (text) {
   var self = this;
   var notify = $.notify(
@@ -1116,7 +1117,6 @@ BootstrapInterface.prototype.done = function (text) {
     notify.close();
   }, 3000);
 };
-
 BootstrapInterface.prototype.warn = function (text) {
   var self = this;
   var notify = $.notify(
@@ -1180,8 +1180,6 @@ BootstrapInterface.prototype.warn = function (text) {
     notify.close();
   }, 3000);
 };
-
-
 BootstrapInterface.prototype.err = function (text) {
   var self = this;
   var notify = $.notify(
@@ -1245,9 +1243,6 @@ BootstrapInterface.prototype.err = function (text) {
     notify.close();
   }, 3000);
 };
-
-
-
 BootstrapInterface.prototype.ok = function (prompt, callback) {
   if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
   if (typeof callback != 'function') throw new Error('callback required');
