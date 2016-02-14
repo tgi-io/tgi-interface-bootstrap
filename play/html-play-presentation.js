@@ -172,7 +172,9 @@ var Actor = function (args) {
   this.modelType = "Actor";
   this.attributes.push(new tgi.Attribute('Name'));
   this.attributes.push(new tgi.Attribute('Born', 'Number'));
+  this.attributes.push(new tgi.Attribute('Today', 'Date'));
   this.attributes.push(new tgi.Attribute('Sex'));
+  this.attributes.push(new tgi.Attribute('Joystick','Boolean'));
 };
 Actor.prototype = Object.create(tgi.Model.prototype);
 var actor = new Actor();
@@ -207,7 +209,9 @@ for (i in actorsInfo) {
     actors.set('id', id++);
     actors.set('Name', actorsInfo[i][0]);
     actors.set('Born', actorsInfo[i][1]);
+    actors.set('Today',new Date() );
     actors.set('Sex', actorsInfo[i][2]);
+    actors.set('Joystick',(Math.random() >.5) );
   }
 }
 
@@ -333,4 +337,10 @@ nav.set('contents', [
 app.start(function (request) {
   app.info('app got ' + request);
 });
-attributeCommand.execute(ui);
+new tgi.Command({
+  name: 'list',
+  type: 'Presentation',
+  theme: 'info',
+  icon: 'fa-table',
+  contents: listPresentation
+}).execute(ui);
