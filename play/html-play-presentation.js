@@ -172,7 +172,7 @@ var Actor = function (args) {
   this.modelType = "Actor";
   this.attributes.push(new tgi.Attribute('Name'));
   this.attributes.push(new tgi.Attribute('Born', 'Number'));
-  this.attributes.push(new tgi.Attribute('Today', 'Date'));
+  this.attributes.push(new tgi.Attribute({name:'Today', type:'Date', hidden:'*'}));
   this.attributes.push(new tgi.Attribute('Sex'));
   this.attributes.push(new tgi.Attribute('Joystick','Boolean'));
 };
