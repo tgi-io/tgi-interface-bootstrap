@@ -4,7 +4,7 @@
 TGI.INTERFACE = TGI.INTERFACE || {};
 TGI.INTERFACE.BOOTSTRAP = function () {
   return {
-    version: '0.1.8',
+    version: '0.1.10',
     BootstrapInterface: BootstrapInterface
   };
 };
@@ -734,7 +734,8 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
     var tHeadRow = addEle(tHead, 'tr');
     for (j = 1; j < list.model.attributes.length; j++) { // skip id (0))
       var hAttribute = list.model.attributes[j];
-      addEle(tHeadRow, 'th').innerHTML = hAttribute.label;
+      if (hAttribute.hidden == undefined)
+        addEle(tHeadRow, 'th').innerHTML = hAttribute.label;
     }
 
     /**
@@ -756,10 +757,13 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
 
       for (j = 1; j < list.model.attributes.length; j++) { // skip id (0))
         var dAttribute = list.model.attributes[j];
-        var dValue = list.get(dAttribute.name);
-        if (!dAttribute.hidden) {
+        if (dAttribute.hidden == undefined) {
+          var dValue = list.get(dAttribute.name);
           switch (dAttribute.type) {
             case 'Date':
+              //console.log('dValue=' + dValue);
+              // addEle(tBodyRow, 'td').innerHTML = left(dValue.toISOString(), 10);
+              // addEle(tBodyRow, 'td').innerHTML = dValue.toString(); // todo use moment.js
               addEle(tBodyRow, 'td').innerHTML = left(dValue.toISOString(), 10);
               break;
             case 'Boolean':
