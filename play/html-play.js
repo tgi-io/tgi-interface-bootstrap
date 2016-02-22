@@ -20,7 +20,7 @@ var userQueryCommand = new tgi.Command({
     tasks: [
       function () {
         var task = this;
-        app.ask('What is first your name?', new tgi.Attribute({name: 'name'}), function (reply) {
+        app.ask('What is first your name?', new tgi.Attribute({name: 'name', value: 'John Doe'}), function (reply) {
           if (!reply)
             userQueryCommand.abort();
           else {
