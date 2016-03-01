@@ -4,7 +4,7 @@
 TGI.INTERFACE = TGI.INTERFACE || {};
 TGI.INTERFACE.BOOTSTRAP = function () {
   return {
-    version: '0.1.10',
+    version: '0.1.11',
     BootstrapInterface: BootstrapInterface
   };
 };
@@ -304,7 +304,7 @@ BootstrapInterface.prototype.activatePanel = function (command) {
     /**
      * Main framing and title text
      */
-    panel.panelDiv = addTopEle(this.doc.panelRow, 'div', 'panel panel-' + theme, {draggable: 'true'});
+    panel.panelDiv = addTopEle(this.doc.panelRow, 'div', 'panel panel-' + theme);
     panel.panelHeading = addEle(panel.panelDiv, 'div', 'panel-heading');
     panel.panelTitle = addEle(panel.panelHeading, 'div', 'panel-title');
     panel.panelTitleText = addEle(panel.panelTitle, 'a', 'panel-title-text', {href: '#'});
@@ -1299,6 +1299,7 @@ BootstrapInterface.prototype.ask = function (prompt, attribute, callback) {
   } else {
     this.doc.askDialogTitle.innerHTML = this.application.get('brand');
     this.doc.askDialogPrompt.innerHTML = prompt + '<br><br>';
+    this.doc.askDialogInput.value = attribute.value;
     $(this.doc.askDialog).modal();
     this.askcallback = callback;
   }
