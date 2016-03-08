@@ -2826,7 +2826,7 @@ var cpad = function (expr, length, fillChar) {
 TGI.INTERFACE = TGI.INTERFACE || {};
 TGI.INTERFACE.BOOTSTRAP = function () {
   return {
-    version: '0.1.13',
+    version: '0.1.17',
     BootstrapInterface: BootstrapInterface
   };
 };
@@ -3591,7 +3591,10 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
               //console.log('dValue=' + dValue);
               // addEle(tBodyRow, 'td').innerHTML = left(dValue.toISOString(), 10);
               // addEle(tBodyRow, 'td').innerHTML = dValue.toString(); // todo use moment.js
-              addEle(tBodyRow, 'td').innerHTML = left(dValue.toISOString(), 10);
+              if (dValue)
+                addEle(tBodyRow, 'td').innerHTML = left(dValue.toISOString(), 10);
+              else
+                addEle(tBodyRow, 'td').innerHTML = '&nbsp;';
               break;
             case 'Boolean':
               if (dValue)

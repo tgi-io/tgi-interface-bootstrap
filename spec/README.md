@@ -1,5 +1,5 @@
 
-*208 model tests applied*    
+*214 model tests applied*    
 
 ## [&#9664;](#-model)&nbsp;[&#8984;](#constructors)&nbsp;[&#9654;](#-request) &nbsp;Procedure
 #### Procedure Class
@@ -441,6 +441,43 @@ new SurrogateStore().deleteModel();
 This method will clear and populate the list with collection from store.  The **filter** property can be used to query the store.  The **order** property can specify the sort order of the list.  _See integration test for more info._    
 
 #### Store Integration
+&nbsp;<b><i>Check each type:</i></b>
+```javascript
+var self = this;
+spec.integrationStore = new SurrogateStore();
+// If store is not ready then get out...
+if (!spec.integrationStore.getServices().isReady) {
+  self.log('Store is not ready.');
+  callback(true);
+  return;
+}
+self.Types = function (args) {
+  Model.call(this, args);
+  this.modelType = "_tempTypes";
+  this.attributes.push(new Attribute({name: 'String', type: 'String', value: 'cheese'}));
+  this.attributes.push(new Attribute({name: 'Date', type: 'Date', value: new Date()}));
+  this.attributes.push(new Attribute({name: 'Boolean', type: 'Boolean', value: true}));
+  this.attributes.push(new Attribute({name: 'Number', type: 'Number', value: 42}));
+};
+self.Types.prototype = Object.create(Model.prototype);
+self.types = new self.Types();
+self.types2 = new self.Types();
+self.types2.copy(self.types);
+spec.integrationStore.putModel(self.types, function (model, error) {
+  if (typeof error != 'undefined') {
+    callback(error);
+    return;
+  }
+  self.shouldBeTrue(model.get('String') == self.types2.get('String'));
+  self.shouldBeTrue(model.get('Date') == self.types2.get('Date'));
+  self.shouldBeTrue(model.get('Date') instanceof Date);
+  self.shouldBeTrue(model.get('Boolean') == self.types2.get('Boolean'));
+  self.shouldBeTrue(model.get('Number') == self.types2.get('Number'));
+  callback(true);
+});
+```
+<blockquote><strong>log: </strong>Store is not ready.<br>returns <strong>true</strong> as expected
+</blockquote>
 #### CRUD (Create Read Update Delete)
 &nbsp;<b><i>Exercise all store function for one store.:</i></b>
 ```javascript
@@ -524,7 +561,7 @@ function stoogeStored(model, error) {
   try {
     self.stoogeIDsStored.push(model.get('id'));
     if (self.stoogeIDsStored.length == 3) {
-      self.shouldBeTrue(true,'here');
+      self.shouldBeTrue(true, 'here');
       // Now that first 3 stooges are stored lets retrieve and verify
       var actors = [];
       for (var i = 0; i < 3; i++) {
@@ -546,10 +583,10 @@ function stoogeRetrieved(model, error) {
   }
   self.stoogesRetrieved.push(model);
   if (self.stoogesRetrieved.length == 3) {
-    self.shouldBeTrue(true,'here');
+    self.shouldBeTrue(true, 'here');
     // Now we have stored and retrieved (via IDs into new objects).  So verify the stooges made it
     self.shouldBeTrue(self.stoogesRetrieved[0] !== self.moe && // Make sure not a reference but a copy
-    self.stoogesRetrieved[0] !== self.larry && self.stoogesRetrieved[0] !== self.shemp,'copy');
+      self.stoogesRetrieved[0] !== self.larry && self.stoogesRetrieved[0] !== self.shemp, 'copy');
     var s = []; // get list of names to see if all stooges made it
     for (var i = 0; i < 3; i++) s.push(self.stoogesRetrieved[i].get('name'));
     self.log(s);
@@ -579,7 +616,7 @@ function stoogeChanged(model, error) {
     callback(error);
     return;
   }
-  self.shouldBeTrue(model.get('name') == 'Curly','Curly');
+  self.shouldBeTrue(model.get('name') == 'Curly', 'Curly');
   var curly = new self.Stooge();
   curly.set('id', model.get('id'));
   try {
@@ -595,7 +632,7 @@ function storeChangedShempToCurly(model, error) {
     callback(error);
     return;
   }
-  self.shouldBeTrue(model.get('name') == 'Curly','Curly');
+  self.shouldBeTrue(model.get('name') == 'Curly', 'Curly');
   // Now test delete
   self.deletedModelId = model.get('id'); // Remember this
   spec.integrationStore.deleteModel(model, stoogeDeleted);
@@ -632,7 +669,7 @@ function hesDeadJim(model, error) {
     // Now create a list from the stooge store
     var list = new List(new self.Stooge());
     try {
-      spec.integrationStore.getList(list, {}, {name:1}, listReady);
+      spec.integrationStore.getList(list, {}, {name: 1}, listReady);
     }
     catch (err) {
       callback(err);
@@ -646,12 +683,12 @@ function listReady(list, error) {
     callback(error);
     return;
   }
-  self.shouldBeTrue(list instanceof List,'is list');
-  self.shouldBeTrue(list.length() == 2,'is 2');
+  self.shouldBeTrue(list instanceof List, 'is list');
+  self.shouldBeTrue(list.length() == 2, 'is 2');
   list.moveFirst();
-  self.shouldBeTrue(list.get('name') == 'Larry','larry');
+  self.shouldBeTrue(list.get('name') == 'Larry', 'larry');
   list.moveNext();
-  self.shouldBeTrue(list.get('name') == 'Moe','moe');
+  self.shouldBeTrue(list.get('name') == 'Moe', 'moe');
   callback(true);
 }
 ```
@@ -923,7 +960,7 @@ return new Application() instanceof Application;
 ```
 <blockquote>returns <strong>true</strong> as expected
 </blockquote>
-*25 model tests applied*    
+*28 model tests applied*    
 
 &nbsp;<b><i>argument property interface will invoke setInterface method:</i></b>
 ```javascript
@@ -1233,7 +1270,7 @@ return new Log() instanceof Log;
 ```
 <blockquote>returns <strong>true</strong> as expected
 </blockquote>
-*25 model tests applied*    
+*28 model tests applied*    
 
 #### ATTRIBUTES
 &nbsp;<b><i>following attributes are defined::</i></b>
@@ -1246,7 +1283,7 @@ this.shouldBeTrue(log.get('logType') == 'Text');
 this.shouldBeTrue(log.get('importance') == 'Info');
 this.shouldBeTrue(log.get('contents') == 'what up');
 ```
-<blockquote><strong>log: </strong>Thu Oct 29 2015 09:52:38 GMT-0400 (EDT)<br></blockquote>
+<blockquote><strong>log: </strong>Tue Mar 08 2016 15:15:15 GMT-0500 (EST)<br></blockquote>
 #### LOG TYPES
 &nbsp;<b><i>must be valid:</i></b>
 ```javascript
@@ -1279,7 +1316,7 @@ return new Presentation() instanceof Presentation;
 ```
 <blockquote>returns <strong>true</strong> as expected
 </blockquote>
-*25 model tests applied*    
+*28 model tests applied*    
 
 #### PROPERTIES
 #### model
@@ -1488,7 +1525,6 @@ this.shouldBeTrue(model.getObjectStateErrors(true).length === 0);
 model.attributes = [new Attribute("ID", "ID"), new SurrogateModel(), 0, 'a', {}, [], null];
 this.shouldBeTrue(model.getObjectStateErrors(true).length == 6);
 ```
-#### value
 #### METHODS
 #### toString()
 &nbsp;<b><i>should return a description of the model:</i></b>
@@ -1566,6 +1602,33 @@ new Model().onEvent(['Validate'], function () {
 });
 ```
 <blockquote><strong>log: </strong>T.getAttributeEvents()<br></blockquote>
+#### getShortName
+&nbsp;<b><i>returns short description of model, defaults to first string attribute:</i></b>
+```javascript
+var question = new SurrogateModel({attributes: [new Attribute('name')]});
+question.attributes[1].value = 'Shorty';
+return question.getShortName();
+```
+<blockquote>returns <strong>Shorty</strong> as expected
+</blockquote>
+&nbsp;<b><i>if no string attribute found empty string returned:</i></b>
+```javascript
+// Test for model since models may provide attributes to fail this test
+var question = new Model({attributes: [new Attribute('answer', 'Number')]});
+question.attributes[1].value = 42;
+return question.getShortName();
+```
+#### getLongName
+note - both getShortName and getLongName should be overriden with method returning desired results when needed.    
+
+&nbsp;<b><i>return a more verbose name for model than getShortName:</i></b>
+```javascript
+var question = new SurrogateModel({attributes: [new Attribute('name')]});
+question.attributes[1].value = 'Shorty';
+return question.getLongName();
+```
+<blockquote>returns <strong>Shorty</strong> as expected
+</blockquote>
 #### get(attributeName)
 &nbsp;<b><i>returns undefined if the attribute does not exist:</i></b>
 ```javascript
@@ -1582,7 +1645,7 @@ return question.get('answer');
 #### getAttributeType(attributeName)
 &nbsp;<b><i>returns attribute type for given attribute name:</i></b>
 ```javascript
-return new Model({attributes: [new Attribute('born', 'Date')]}).getAttributeType('born');
+return new SurrogateModel({attributes: [new Attribute('born', 'Date')]}).getAttributeType('born');
 ```
 <blockquote>returns <strong>Date</strong> as expected
 </blockquote>
@@ -1691,7 +1754,7 @@ function test4() {
 ```
 <blockquote>returns <strong>test4: 0</strong> as expected
 </blockquote>
-*25 model tests applied*    
+*28 model tests applied*    
 
 #### ATTRIBUTES
 &nbsp;<b><i>following attributes are defined::</i></b>
@@ -1912,7 +1975,6 @@ this.shouldBeTrue(model.getObjectStateErrors(true).length === 0);
 model.attributes = [new Attribute("ID", "ID"), new SurrogateModel(), 0, 'a', {}, [], null];
 this.shouldBeTrue(model.getObjectStateErrors(true).length == 6);
 ```
-#### value
 #### METHODS
 #### toString()
 &nbsp;<b><i>should return a description of the model:</i></b>
@@ -1990,6 +2052,33 @@ new Model().onEvent(['Validate'], function () {
 });
 ```
 <blockquote><strong>log: </strong>T.getAttributeEvents()<br></blockquote>
+#### getShortName
+&nbsp;<b><i>returns short description of model, defaults to first string attribute:</i></b>
+```javascript
+var question = new SurrogateModel({attributes: [new Attribute('name')]});
+question.attributes[1].value = 'Shorty';
+return question.getShortName();
+```
+<blockquote>returns <strong>Shorty</strong> as expected
+</blockquote>
+&nbsp;<b><i>if no string attribute found empty string returned:</i></b>
+```javascript
+// Test for model since models may provide attributes to fail this test
+var question = new Model({attributes: [new Attribute('answer', 'Number')]});
+question.attributes[1].value = 42;
+return question.getShortName();
+```
+#### getLongName
+note - both getShortName and getLongName should be overriden with method returning desired results when needed.    
+
+&nbsp;<b><i>return a more verbose name for model than getShortName:</i></b>
+```javascript
+var question = new SurrogateModel({attributes: [new Attribute('name')]});
+question.attributes[1].value = 'Shorty';
+return question.getLongName();
+```
+<blockquote>returns <strong>Shorty</strong> as expected
+</blockquote>
 #### get(attributeName)
 &nbsp;<b><i>returns undefined if the attribute does not exist:</i></b>
 ```javascript
@@ -2006,7 +2095,7 @@ return question.get('answer');
 #### getAttributeType(attributeName)
 &nbsp;<b><i>returns attribute type for given attribute name:</i></b>
 ```javascript
-return new Model({attributes: [new Attribute('born', 'Date')]}).getAttributeType('born');
+return new SurrogateModel({attributes: [new Attribute('born', 'Date')]}).getAttributeType('born');
 ```
 <blockquote>returns <strong>Date</strong> as expected
 </blockquote>
@@ -2115,7 +2204,7 @@ function test4() {
 ```
 <blockquote>returns <strong>test4: 0</strong> as expected
 </blockquote>
-*25 model tests applied*    
+*28 model tests applied*    
 
 #### ATTRIBUTES
 &nbsp;<b><i>following attributes are defined::</i></b>
@@ -2203,7 +2292,6 @@ this.shouldBeTrue(model.getObjectStateErrors(true).length === 0);
 model.attributes = [new Attribute("ID", "ID"), new SurrogateModel(), 0, 'a', {}, [], null];
 this.shouldBeTrue(model.getObjectStateErrors(true).length == 6);
 ```
-#### value
 #### METHODS
 #### toString()
 &nbsp;<b><i>should return a description of the model:</i></b>
@@ -2281,6 +2369,33 @@ new Model().onEvent(['Validate'], function () {
 });
 ```
 <blockquote><strong>log: </strong>T.getAttributeEvents()<br></blockquote>
+#### getShortName
+&nbsp;<b><i>returns short description of model, defaults to first string attribute:</i></b>
+```javascript
+var question = new SurrogateModel({attributes: [new Attribute('name')]});
+question.attributes[1].value = 'Shorty';
+return question.getShortName();
+```
+<blockquote>returns <strong>Shorty</strong> as expected
+</blockquote>
+&nbsp;<b><i>if no string attribute found empty string returned:</i></b>
+```javascript
+// Test for model since models may provide attributes to fail this test
+var question = new Model({attributes: [new Attribute('answer', 'Number')]});
+question.attributes[1].value = 42;
+return question.getShortName();
+```
+#### getLongName
+note - both getShortName and getLongName should be overriden with method returning desired results when needed.    
+
+&nbsp;<b><i>return a more verbose name for model than getShortName:</i></b>
+```javascript
+var question = new SurrogateModel({attributes: [new Attribute('name')]});
+question.attributes[1].value = 'Shorty';
+return question.getLongName();
+```
+<blockquote>returns <strong>Shorty</strong> as expected
+</blockquote>
 #### get(attributeName)
 &nbsp;<b><i>returns undefined if the attribute does not exist:</i></b>
 ```javascript
@@ -2297,7 +2412,7 @@ return question.get('answer');
 #### getAttributeType(attributeName)
 &nbsp;<b><i>returns attribute type for given attribute name:</i></b>
 ```javascript
-return new Model({attributes: [new Attribute('born', 'Date')]}).getAttributeType('born');
+return new SurrogateModel({attributes: [new Attribute('born', 'Date')]}).getAttributeType('born');
 ```
 <blockquote>returns <strong>Date</strong> as expected
 </blockquote>
@@ -2406,7 +2521,7 @@ function test4() {
 ```
 <blockquote>returns <strong>test4: 0</strong> as expected
 </blockquote>
-*25 model tests applied*    
+*28 model tests applied*    
 
 #### ATTRIBUTES
 &nbsp;<b><i>following attributes are defined::</i></b>
@@ -2672,6 +2787,43 @@ this.shouldThrowError(Error('callback required'), function () {
 // See integration tests for examples of usage
 ```
 #### Store Integration
+&nbsp;<b><i>Check each type:</i></b>
+```javascript
+var self = this;
+spec.integrationStore = new SurrogateStore();
+// If store is not ready then get out...
+if (!spec.integrationStore.getServices().isReady) {
+  self.log('Store is not ready.');
+  callback(true);
+  return;
+}
+self.Types = function (args) {
+  Model.call(this, args);
+  this.modelType = "_tempTypes";
+  this.attributes.push(new Attribute({name: 'String', type: 'String', value: 'cheese'}));
+  this.attributes.push(new Attribute({name: 'Date', type: 'Date', value: new Date()}));
+  this.attributes.push(new Attribute({name: 'Boolean', type: 'Boolean', value: true}));
+  this.attributes.push(new Attribute({name: 'Number', type: 'Number', value: 42}));
+};
+self.Types.prototype = Object.create(Model.prototype);
+self.types = new self.Types();
+self.types2 = new self.Types();
+self.types2.copy(self.types);
+spec.integrationStore.putModel(self.types, function (model, error) {
+  if (typeof error != 'undefined') {
+    callback(error);
+    return;
+  }
+  self.shouldBeTrue(model.get('String') == self.types2.get('String'));
+  self.shouldBeTrue(model.get('Date') == self.types2.get('Date'));
+  self.shouldBeTrue(model.get('Date') instanceof Date);
+  self.shouldBeTrue(model.get('Boolean') == self.types2.get('Boolean'));
+  self.shouldBeTrue(model.get('Number') == self.types2.get('Number'));
+  callback(true);
+});
+```
+<blockquote>returns <strong>true</strong> as expected
+</blockquote>
 #### CRUD (Create Read Update Delete)
 &nbsp;<b><i>Exercise all store function for one store.:</i></b>
 ```javascript
@@ -2755,7 +2907,7 @@ function stoogeStored(model, error) {
   try {
     self.stoogeIDsStored.push(model.get('id'));
     if (self.stoogeIDsStored.length == 3) {
-      self.shouldBeTrue(true,'here');
+      self.shouldBeTrue(true, 'here');
       // Now that first 3 stooges are stored lets retrieve and verify
       var actors = [];
       for (var i = 0; i < 3; i++) {
@@ -2777,10 +2929,10 @@ function stoogeRetrieved(model, error) {
   }
   self.stoogesRetrieved.push(model);
   if (self.stoogesRetrieved.length == 3) {
-    self.shouldBeTrue(true,'here');
+    self.shouldBeTrue(true, 'here');
     // Now we have stored and retrieved (via IDs into new objects).  So verify the stooges made it
     self.shouldBeTrue(self.stoogesRetrieved[0] !== self.moe && // Make sure not a reference but a copy
-    self.stoogesRetrieved[0] !== self.larry && self.stoogesRetrieved[0] !== self.shemp,'copy');
+      self.stoogesRetrieved[0] !== self.larry && self.stoogesRetrieved[0] !== self.shemp, 'copy');
     var s = []; // get list of names to see if all stooges made it
     for (var i = 0; i < 3; i++) s.push(self.stoogesRetrieved[i].get('name'));
     self.log(s);
@@ -2810,7 +2962,7 @@ function stoogeChanged(model, error) {
     callback(error);
     return;
   }
-  self.shouldBeTrue(model.get('name') == 'Curly','Curly');
+  self.shouldBeTrue(model.get('name') == 'Curly', 'Curly');
   var curly = new self.Stooge();
   curly.set('id', model.get('id'));
   try {
@@ -2826,7 +2978,7 @@ function storeChangedShempToCurly(model, error) {
     callback(error);
     return;
   }
-  self.shouldBeTrue(model.get('name') == 'Curly','Curly');
+  self.shouldBeTrue(model.get('name') == 'Curly', 'Curly');
   // Now test delete
   self.deletedModelId = model.get('id'); // Remember this
   spec.integrationStore.deleteModel(model, stoogeDeleted);
@@ -2863,7 +3015,7 @@ function hesDeadJim(model, error) {
     // Now create a list from the stooge store
     var list = new List(new self.Stooge());
     try {
-      spec.integrationStore.getList(list, {}, {name:1}, listReady);
+      spec.integrationStore.getList(list, {}, {name: 1}, listReady);
     }
     catch (err) {
       callback(err);
@@ -2877,12 +3029,12 @@ function listReady(list, error) {
     callback(error);
     return;
   }
-  self.shouldBeTrue(list instanceof List,'is list');
-  self.shouldBeTrue(list.length() == 2,'is 2');
+  self.shouldBeTrue(list instanceof List, 'is list');
+  self.shouldBeTrue(list.length() == 2, 'is 2');
   list.moveFirst();
-  self.shouldBeTrue(list.get('name') == 'Larry','larry');
+  self.shouldBeTrue(list.get('name') == 'Larry', 'larry');
   list.moveNext();
-  self.shouldBeTrue(list.get('name') == 'Moe','moe');
+  self.shouldBeTrue(list.get('name') == 'Moe', 'moe');
   callback(true);
 }
 ```
@@ -3139,7 +3291,7 @@ return ':' + cpad('x',3) + ':';
 #### BootstrapInterface
 The BootstrapInterface uses  Bootstrap (http://www.idangero.us/bootstrap) to create a IOS 7+ type of UI.    
 
-Core tests run: {"testsCreated":25}    
+Core tests run: {"testsCreated":28}    
 
 This doc may be outdated since tests run in browser.  See source code for more info.    
 
