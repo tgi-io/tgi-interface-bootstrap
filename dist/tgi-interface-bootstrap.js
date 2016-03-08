@@ -2826,7 +2826,7 @@ var cpad = function (expr, length, fillChar) {
 TGI.INTERFACE = TGI.INTERFACE || {};
 TGI.INTERFACE.BOOTSTRAP = function () {
   return {
-    version: '0.1.11',
+    version: '0.1.13',
     BootstrapInterface: BootstrapInterface
   };
 };
@@ -2981,7 +2981,7 @@ BootstrapInterface.prototype.refreshNavigation = function () {
   var separatorSeen = false;
   for (var menuItem in menuContents) if (menuContents.hasOwnProperty(menuItem)) {
     if (menuContents[menuItem].type == 'Menu') {
-      var parentMenu = this.addNavBarListMenu(this.doc.navBarLeft, menuContents[menuItem].name);
+      var parentMenu = this.addNavBarListMenu(this.doc.navBarLeft, menuContents[menuItem]);
       var subMenu = menuContents[menuItem].contents;
       for (var subPres in subMenu)
         if (subMenu.hasOwnProperty(subPres))
@@ -3004,9 +3004,7 @@ BootstrapInterface.prototype.addNavigationItem = function (parent, action) {
       icon = '<i class="fa ' + action.icon + '"></i>&nbsp;';
     else
       icon = '<span class="glyphicon ' + action.icon + '"></span>&nbsp;';
-    //<a href="#"><span class="glyphicon glyphicon-chevron-down panel-glyph-left text-muted"></span></a>
   }
-  //listItem.innerHTML = '<a >' + icon + action.name + '</a>';
   listItem.innerHTML = '<button type="button" class="btn btn-' + theme + ' navbar-btn">' + icon + action.name + '</button>';
   $(listItem).click(function (e) {
     bootstrapInterface.dispatch(new Request({type: 'Command', command: action}));
@@ -3035,13 +3033,20 @@ BootstrapInterface.prototype.addNavBarListItem = function (parent, action, icon)
   listItem.innerHTML = html;
   parent.appendChild(listItem);
 };
-BootstrapInterface.prototype.addNavBarListMenu = function (parent, name) {
+BootstrapInterface.prototype.addNavBarListMenu = function (parent, action) {
+
+  var icon = '';
+  var theme = action.theme || 'default';
+  if (action.icon) {
+    if (left(action.icon,2) == 'fa')
+      icon = '<i class="fa ' + action.icon + '"></i>&nbsp;';
+    else
+      icon = '<span class="glyphicon ' + action.icon + '"></span>&nbsp;';
+  }
 
   var dropDown = document.createElement('li');
   dropDown.className = "dropdown";
-  //dropDown.innerHTML = '<a href="#" class="dropdown-toggle navbar-menu" data-toggle="dropdown">' + name + '<b class="caret"></b></a>';
-  dropDown.innerHTML = '<button type="button" class="dropdown-toggle btn btn-default navbar-btn" data-toggle="dropdown">' + name + '&nbsp;<b class="caret"></b></button>';
-  // listItem.innerHTML = '<button type="button" class="btn btn-default navbar-btn">' + action.name + '</button>';
+  dropDown.innerHTML = '<button type="button" class="dropdown-toggle btn btn-' + theme + ' navbar-btn" data-toggle="dropdown">' + icon + action.name + '&nbsp;<b class="caret"></b></button>';
   parent.appendChild(dropDown);
 
   var dropDownMenu = document.createElement('ul');

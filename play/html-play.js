@@ -113,7 +113,7 @@ var commands =   new tgi.Command({name: 'Commands', type: 'Menu', contents: [
  * Navigation
  */
 nav.set('contents', [
-  new tgi.Command({name: 'Stooges', type: 'Menu', contents: [
+  new tgi.Command({name: 'Stooges', type: 'Menu', theme: 'info', icon: 'fa-info-circle', contents: [
     'The Three Stooges',
     '-',
     stubMoe,
