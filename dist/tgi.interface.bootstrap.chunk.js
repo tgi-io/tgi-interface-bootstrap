@@ -4,7 +4,7 @@
 TGI.INTERFACE = TGI.INTERFACE || {};
 TGI.INTERFACE.BOOTSTRAP = function () {
   return {
-    version: '0.1.17',
+    version: '0.1.22',
     BootstrapInterface: BootstrapInterface
   };
 };
@@ -617,6 +617,7 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
 
       case 'ViewDate':
         input = addEle(inputDiv, 'p', 'form-control-static');
+        console.log('ViewDate: ' + JSON.stringify(attribute));
         if (attribute.value)
           input.innerHTML = (1 + attribute.value.getMonth()) + '/' + attribute.value.getDate() + '/' + attribute.value.getFullYear();
 
@@ -635,6 +636,7 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
       switch (attribute.type) {
         case 'Date':
           attribute.value = (input.value === '') ? null : attribute.coerce(input.value);
+          console.log('validateInput ' + attribute);
           if (attribute.value != null) {
             var mm = attribute.value.getMonth() + 1;
             var dd = attribute.value.getDate();
@@ -670,7 +672,7 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
     attribute.onEvent('StateChange', function () {
       switch (mode + attribute.type) {
         case 'EditBoolean':
-          if (attribute.value != input.checked)
+          if (( attribute.value ? true : false ) != input.checked)
             $(input).click();
           break;
         case 'EditDate':
@@ -1001,6 +1003,84 @@ BootstrapInterface.prototype.htmlDialog = function () {
   choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
   $(choice).on('click', function () {
     bootstrapInterface.doc.chooseDialogChoice = 7;
+    $(bootstrapInterface.doc.chooseDialog).modal('hide');
+  });
+  this.doc.chooseDialogButtons.push(choice);
+  choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
+  $(choice).on('click', function () {
+    bootstrapInterface.doc.chooseDialogChoice = 8;
+    $(bootstrapInterface.doc.chooseDialog).modal('hide');
+  });
+  this.doc.chooseDialogButtons.push(choice);
+  choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
+  $(choice).on('click', function () {
+    bootstrapInterface.doc.chooseDialogChoice = 9;
+    $(bootstrapInterface.doc.chooseDialog).modal('hide');
+  });
+  this.doc.chooseDialogButtons.push(choice);
+  choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
+  $(choice).on('click', function () {
+    bootstrapInterface.doc.chooseDialogChoice = 10;
+    $(bootstrapInterface.doc.chooseDialog).modal('hide');
+  });
+  this.doc.chooseDialogButtons.push(choice);
+  choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
+  $(choice).on('click', function () {
+    bootstrapInterface.doc.chooseDialogChoice = 11;
+    $(bootstrapInterface.doc.chooseDialog).modal('hide');
+  });
+  this.doc.chooseDialogButtons.push(choice);
+  choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
+  $(choice).on('click', function () {
+    bootstrapInterface.doc.chooseDialogChoice = 12;
+    $(bootstrapInterface.doc.chooseDialog).modal('hide');
+  });
+  this.doc.chooseDialogButtons.push(choice);
+  choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
+  $(choice).on('click', function () {
+    bootstrapInterface.doc.chooseDialogChoice = 13;
+    $(bootstrapInterface.doc.chooseDialog).modal('hide');
+  });
+  this.doc.chooseDialogButtons.push(choice);
+  choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
+  $(choice).on('click', function () {
+    bootstrapInterface.doc.chooseDialogChoice = 14;
+    $(bootstrapInterface.doc.chooseDialog).modal('hide');
+  });
+  this.doc.chooseDialogButtons.push(choice);
+  choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
+  $(choice).on('click', function () {
+    bootstrapInterface.doc.chooseDialogChoice = 15;
+    $(bootstrapInterface.doc.chooseDialog).modal('hide');
+  });
+  this.doc.chooseDialogButtons.push(choice);
+  choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
+  $(choice).on('click', function () {
+    bootstrapInterface.doc.chooseDialogChoice = 16;
+    $(bootstrapInterface.doc.chooseDialog).modal('hide');
+  });
+  this.doc.chooseDialogButtons.push(choice);
+  choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
+  $(choice).on('click', function () {
+    bootstrapInterface.doc.chooseDialogChoice = 17;
+    $(bootstrapInterface.doc.chooseDialog).modal('hide');
+  });
+  this.doc.chooseDialogButtons.push(choice);
+  choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
+  $(choice).on('click', function () {
+    bootstrapInterface.doc.chooseDialogChoice = 18;
+    $(bootstrapInterface.doc.chooseDialog).modal('hide');
+  });
+  this.doc.chooseDialogButtons.push(choice);
+  choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
+  $(choice).on('click', function () {
+    bootstrapInterface.doc.chooseDialogChoice = 19;
+    $(bootstrapInterface.doc.chooseDialog).modal('hide');
+  });
+  this.doc.chooseDialogButtons.push(choice);
+  choice = addEle(modalBody, 'button', 'btn btn-default btn-block');
+  $(choice).on('click', function () {
+    bootstrapInterface.doc.chooseDialogChoice = 20;
     $(bootstrapInterface.doc.chooseDialog).modal('hide');
   });
   this.doc.chooseDialogButtons.push(choice);
