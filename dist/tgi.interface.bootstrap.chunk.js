@@ -4,7 +4,7 @@
 TGI.INTERFACE = TGI.INTERFACE || {};
 TGI.INTERFACE.BOOTSTRAP = function () {
   return {
-    version: '0.1.22',
+    version: '0.1.24',
     BootstrapInterface: BootstrapInterface
   };
 };
@@ -617,7 +617,6 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
 
       case 'ViewDate':
         input = addEle(inputDiv, 'p', 'form-control-static');
-        console.log('ViewDate: ' + JSON.stringify(attribute));
         if (attribute.value)
           input.innerHTML = (1 + attribute.value.getMonth()) + '/' + attribute.value.getDate() + '/' + attribute.value.getFullYear();
 
@@ -636,7 +635,6 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
       switch (attribute.type) {
         case 'Date':
           attribute.value = (input.value === '') ? null : attribute.coerce(input.value);
-          console.log('validateInput ' + attribute);
           if (attribute.value != null) {
             var mm = attribute.value.getMonth() + 1;
             var dd = attribute.value.getDate();
