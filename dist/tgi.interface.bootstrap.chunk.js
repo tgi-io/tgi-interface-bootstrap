@@ -255,6 +255,7 @@ BootstrapInterface.prototype.htmlPanels = function () {
  * activatePanel will create if needed, make panel visible and render contents
  */
 BootstrapInterface.prototype.activatePanel = function (command) {
+  console.log('FOOOOOOK');
 
   var bootstrapInterface = this;
   var addEle = BootstrapInterface.addEle;
