@@ -10,7 +10,7 @@ var root = this;
 var TGI = {
   CORE: function () {
     return {
-      version: '0.4.47',
+      version: '0.4.48',
       Application: Application,
       Attribute: Attribute,
       Command: Command,
@@ -1655,7 +1655,7 @@ function Transport(location, callback) {
   self.socket.on('connect', function () {
     self.connected = true;
     self.initialConnect = false;
-    console.log('socket.io (' + self.location + ') connected');
+    // console.log('socket.io (' + self.location + ') connected');
     callback.call(self, new Message('Connected', ''));
   });
   self.socket.on('connecting', function () {
@@ -3304,7 +3304,6 @@ BootstrapInterface.prototype.htmlPanels = function () {
  * activatePanel will create if needed, make panel visible and render contents
  */
 BootstrapInterface.prototype.activatePanel = function (command) {
-  console.log('FOOOOOOK');
 
   var bootstrapInterface = this;
   var addEle = BootstrapInterface.addEle;
@@ -3494,6 +3493,7 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
     if (contents[i] instanceof List) renderList(contents[i], command.theme);
     if (contents[i] instanceof Command) renderCommand(contents[i]);
   }
+
   /**
    * function to render Attribute
    */
@@ -3669,7 +3669,6 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
         input = addEle(inputDiv, 'p', 'form-control-static');
         if (attribute.value)
           input.innerHTML = (1 + attribute.value.getMonth()) + '/' + attribute.value.getDate() + '/' + attribute.value.getFullYear();
-
         break;
 
       default: // View
@@ -3693,6 +3692,17 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
             if (dd < 10) dd = '0' + dd;
             input.value = mm + '/' + dd + '/' + yyyy;
           } else {
+            input.value = '';
+          }
+          break;
+        case 'Number':
+          console.log(`validateInput ${attribute.type} '${input.value}'`);
+          // if it is a number or text '0' set attribute.value to number else set to null
+          if (!isNaN(input.value) && input.value.trim() !== '') {
+            attribute.value = Number(input.value);
+            input.value = attribute.value;
+          } else {
+            attribute.value = null;
             input.value = '';
           }
           break;
@@ -3720,14 +3730,19 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
     attribute.onEvent('StateChange', function () {
       switch (mode + attribute.type) {
         case 'EditBoolean':
-          if (( attribute.value ? true : false ) != input.checked)
+          if ((attribute.value ? true : false) != input.checked)
             $(input).click();
           break;
         case 'EditDate':
           input.value = attribute.value ? '' + (1 + attribute.value.getMonth()) + '/' + attribute.value.getDate() + '/' + attribute.value.getFullYear() : '';
           break;
         case 'EditNumber':
-          input.value = attribute.value ? attribute.value : 0;
+          // if type of attribute.value is a number then set input.value to attribute.value, else set to null
+          if (typeof attribute.value === 'number') {
+            input.value = attribute.value;
+          } else {
+            input.value = '';
+          }
           break;
         case 'EditString':
           input.value = attribute.value ? '' + attribute.value : '';
@@ -3830,9 +3845,16 @@ BootstrapInterface.prototype.renderPanelBody = function (panel, command) {
               else
                 addEle(tBodyRow, 'td').innerHTML = '<i class="fa fa-square-o"></i>';
               break;
+            case 'Number':
+              console.log('*** NUNBER *** dValue=' + dValue + ' typeof=' + typeof dValue + ' JSON=' + JSON.stringify(dValue));
+              if (typeof dValue !== 'number') dValue = null;
+              addEle(tBodyRow, 'td').innerHTML = dValue;
+              break;
             default:
               if (dValue && dValue.name) // todo instanceof Attribute.ModelID did not work so kludge here
                 addEle(tBodyRow, 'td').innerHTML = dValue.name;
+              else if (dValue === null || dValue === undefined)
+                addEle(tBodyRow, 'td').innerHTML = '';
               else
                 addEle(tBodyRow, 'td').innerHTML = dValue;
           }

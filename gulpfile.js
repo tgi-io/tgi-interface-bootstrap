@@ -2,25 +2,27 @@
  * tgi-core/gulpfile.js
  */
 
-var gulp = require('gulp');
-var jshint = require('gulp-jshint');
-var concat = require('gulp-concat');
-var uglify = require('gulp-uglify');
-var rename = require('gulp-rename');
-var childProcess = require('child_process');
+const gulp = require('gulp');
+const jshint = require('gulp-jshint');
+const concat = require('gulp-concat');
+const terser = require('gulp-terser');
+const rename = require('gulp-rename');
+const childProcess = require('child_process');
 
 // Source and _packaging
-var libFiles = [
+const libFiles = [
   'lib/tgi-interface-bootstrap.lib.js',
   'lib/tgi-interface-bootstrap.source.js',
   'lib/tgi-interface-bootstrap-navigation.source.js',
   'lib/tgi-interface-bootstrap-panels.source.js',
   'lib/tgi-interface-bootstrap-queries.source.js'
 ];
-var libPackaging = ['lib/_packaging/lib-header'].concat(['node_modules/tgi-core/dist/tgi.core.chunk.js']).concat(libFiles).concat(['lib/_packaging/lib-footer']);
+const libPackaging = ['lib/_packaging/lib-header']
+  .concat(['node_modules/tgi-core/dist/tgi.core.chunk.js'])
+  .concat(libFiles)
+  .concat(['lib/_packaging/lib-footer']);
 
-// The Spec
-var specFiles = [
+const specFiles = [
   'node_modules/tgi-core//lib/_packaging/spec-header',
   'lib/_packaging/spec-header',
   'node_modules/tgi-core/dist/tgi.core.spec.chunk.js',
@@ -28,119 +30,137 @@ var specFiles = [
   'lib/_packaging/spec-footer'
 ];
 
-// Build Lib
-gulp.task('_buildLib', function () {
+function _buildLib() {
   return gulp.src(libPackaging)
     .pipe(concat('tgi-interface-bootstrap.js'))
     .pipe(gulp.dest('dist'))
     .pipe(rename('tgi-interface-bootstrap.min.js'))
-    .pipe(uglify())
+    .pipe(terser())
     .pipe(gulp.dest('dist'));
-});
+}
 
-// Build Lib Chunk
-gulp.task('_buildLibChunk', function () {
+function _buildLibChunk() {
   return gulp.src(libFiles)
     .pipe(concat('tgi.interface.bootstrap.chunk.js'))
     .pipe(gulp.dest('dist'));
-});
+}
 
-// Build Spec
-gulp.task('_buildSpec', function () {
+function _buildSpec() {
   return gulp.src(specFiles)
     .pipe(concat('tgi-interface-bootstrap.spec.js'))
     .pipe(gulp.dest('dist'));
-});
+}
 
-// Build Task
-gulp.task('build', ['_buildLibChunk', '_buildLib', '_buildSpec'], function (callback) {
-  callback();
-});
+const build = gulp.series(
+  gulp.parallel(_buildLibChunk, _buildLib, _buildSpec)
+);
 
-
-// Lint Lib
-gulp.task('_lintLib', ['_buildLibChunk','_buildLib'], function (callback) {
+function _lintLib() {
   return gulp.src('dist/tgi.core.js')
     .pipe(jshint())
     .pipe(jshint.reporter('jshint-stylish'))
     .pipe(jshint.reporter('fail'));
-});
+}
 
-// Lint Spec
-gulp.task('_lintSpec', ['_buildSpec'], function (callback) {
+function _lintSpec() {
   return gulp.src('dist/tgi.core.spec.js')
-    .pipe(jshint({validthis: true, sub: true}))
+    .pipe(jshint({ validthis: true, sub: true }))
     .pipe(jshint.reporter('jshint-stylish'))
     .pipe(jshint.reporter('fail'));
-});
+}
 
-// Lint Task
-gulp.task('lint', ['_lintLib', '_lintSpec'], function (callback) {
-  callback();
-});
+const lint = gulp.series(
+  build,
+  gulp.parallel(_lintLib, _lintSpec)
+);
 
-// Test Task
-gulp.task('test', ['lint'], function (callback) {
+function test(cb) {
   childProcess.exec('node spec/node-runner.js', function (error, stdout, stderr) {
     console.log(stdout);
-    callback(error);
+    cb(error);
   });
-});
+}
 
-// Copy jQuery
+test.displayName = 'test';
+
+gulp.task('test', gulp.series(lint, test));
+
 gulp.task('copyjQuery', function () {
-  return gulp.src(['node_modules/jquery/dist/**', 'node_modules/jquery/MIT-LICENSE.txt']).pipe(gulp.dest('dist/jquery'));
+  return gulp.src(['node_modules/jquery/dist/**', 'node_modules/jquery/MIT-LICENSE.txt'])
+    .pipe(gulp.dest('dist/jquery'));
 });
 
-// Copy marked
 gulp.task('copyMarked', function () {
-  return gulp.src(['node_modules/marked/lib/marked.js', 'node_modules/marked/marked.min.js', 'node_modules/marked/LICENSE']).pipe(gulp.dest('dist/marked'));
+  return gulp.src([
+    'node_modules/marked/lib/marked.js',
+    'node_modules/marked/marked.min.js',
+    'node_modules/marked/LICENSE'
+  ]).pipe(gulp.dest('dist/marked'));
 });
 
-// Copy Bootstrap
 gulp.task('copyBootstrap', function () {
-  return gulp.src(['node_modules/bootstrap/dist/**', 'node_modules/bootstrap/LICENSE']).pipe(gulp.dest('dist/bootstrap'));
+  return gulp.src([
+    'node_modules/bootstrap/dist/**',
+    'node_modules/bootstrap/LICENSE'
+  ]).pipe(gulp.dest('dist/bootstrap'));
 });
 
-// Copy Bootstrap Datepicker
 gulp.task('copyBootstrapDatepicker', function () {
-  return gulp.src(['node_modules/bootstrap-datepicker/dist/**', 'node_modules/bootstrap/LICENSE']).pipe(gulp.dest('dist/bootstrap-datepicker'));
+  return gulp.src([
+    'node_modules/bootstrap-datepicker/dist/**',
+    'node_modules/bootstrap/LICENSE'
+  ]).pipe(gulp.dest('dist/bootstrap-datepicker'));
 });
 
-// Copy Bootstrap Notify
 gulp.task('copyBootstrapNotify', function () {
-  return gulp.src(['node_modules/bootstrap-notify/dist/**', 'node_modules/bootstrap-notify/LICENSE']).pipe(gulp.dest('dist/bootstrap-notify'));
+  return gulp.src([
+    'node_modules/bootstrap-notify/dist/**',
+    'node_modules/bootstrap-notify/LICENSE'
+  ]).pipe(gulp.dest('dist/bootstrap-notify'));
 });
 
-// Copy Bootstrap Notify
 gulp.task('copyAnimateCSS', function () {
-  return gulp.src(['node_modules/animate.css/*.css', 'node_modules/animate.css/README.md']).pipe(gulp.dest('dist/animate-css'));
+  return gulp.src([
+    'node_modules/animate.css/*.css',
+    'node_modules/animate.css/README.md'
+  ]).pipe(gulp.dest('dist/animate-css'));
 });
 
-// Copy Font Awesome
 gulp.task('copyFontAwesome', function () {
-  return gulp.src(['node_modules/font-awesome/css/**/*', 'node_modules/font-awesome/fonts/**/*', 'node_modules/font-awesome/README.md'], {base: 'node_modules/font-awesome'}).pipe(gulp.dest('dist/font-awesome'));
+  return gulp.src([
+    'node_modules/font-awesome/css/**/*',
+    'node_modules/font-awesome/fonts/**/*',
+    'node_modules/font-awesome/README.md'
+  ], { base: 'node_modules/font-awesome' })
+    .pipe(gulp.dest('dist/font-awesome'));
 });
 
-// Coverage Task
-gulp.task('cover', function (callback) {
+function cover(cb) {
   childProcess.exec('istanbul cover spec/node-runner.js', function (error, stdout, stderr) {
     console.log(stdout);
     console.error(stderr);
-    callback(error);
+    cb(error);
   });
-});
+}
 
-// Spec Task
-gulp.task('spec', ['lint'], function (callback) {
+gulp.task('cover', cover);
+
+function spec(cb) {
   setTimeout(function () {
     childProcess.exec('node spec/node-make-spec-md.js', function (error, stdout, stderr) {
       console.log(stdout);
-      callback(error);
+      cb(error);
     });
-  }, 100); // Without this sometimes the exec runs before script is written/flushed ?
-});
+  }, 100);
+}
 
-// Default & Travis CI Task
-gulp.task('default', ['copyjQuery', 'copyMarked', 'copyBootstrap', 'copyBootstrapNotify', 'copyBootstrapDatepicker', 'copyAnimateCSS', 'copyFontAwesome', 'test']);
-gulp.task('travis', ['test']);
+gulp.task('spec', gulp.series(lint, spec));
+
+gulp.task('build', build);
+gulp.task('lint', lint);
+
+gulp.task('default', gulp.series(
+  gulp.parallel('copyjQuery', 'copyMarked', 'copyBootstrap', 'copyBootstrapNotify', 'copyBootstrapDatepicker', 'copyAnimateCSS', 'copyFontAwesome'),
+  'test'
+));
+gulp.task('travis', gulp.series('test'));
